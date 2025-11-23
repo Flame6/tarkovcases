@@ -1,0 +1,5 @@
+{
+  "name": "Tarkov Stash Optimizer",
+  "description": "An application to help Escape from Tarkov players optimize the layout of their stash containers for maximum space efficiency using a top-down packing algorithm.",
+  "requestFramePermissions": []
+}

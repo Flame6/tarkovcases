@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Pulse/breathing animation for inactive cards */
+@keyframes cardPulse {
+  0%, 100% {
+    transform: scale(1) translateY(0);
+  }
+  50% {
+    transform: scale(1.01) translateY(0);
+  }
+}
+
+/* Case Card Hover Effects */
+.case-card-inactive {
+  position: relative;
+  animation: cardPulse 3s ease-in-out infinite;
+  transition: transform 0.2s ease-out, filter 0.3s ease-out, box-shadow 0.3s ease-out, border-color 0.3s ease-out, background-color 0.3s ease-out !important;
+}
+
+.case-card-inactive:hover {
+  animation: none !important;
+  transform: translateY(-4px) scale(1) !important;
+  filter: brightness(1.15) !important;
+  box-shadow: 0 8px 16px rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  background-color: #1a1a1a !important;
+}
+
+.case-card-inactive:hover .plus-overlay {
+  opacity: 1 !important;
+}
+
+.case-card-inactive:hover .case-card-hint {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Click animation */
+.case-card {
+  transition: transform 0.2s ease-out, filter 0.3s ease-out, box-shadow 0.3s ease-out, border-color 0.3s ease-out, background-color 0.3s ease-out !important;
+}
+
+.case-card.scale-95 {
+  transform: scale(0.95);
+}
+
+/* Active cards - minimal styling */
+.case-card-active {
+  animation: none;
+}
+
+/* Active card hover effects */
+.case-card-active:hover {
+  transform: translateY(-4px) scale(1) !important;
+  filter: brightness(1.1) !important;
+  box-shadow: 0 8px 16px rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  background-color: #1f1f1f !important;
+}
+
+/* Line clamp fallback for case names */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+

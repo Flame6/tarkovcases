@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tarkov Stash Optimizer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body {
+        background-color: #1E1E1E;
+        font-family: 'Chakra Petch', sans-serif;
+      }
+      body::after {
+        content: "";
+        background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAMAAAAp4XiDAAAAUVBMVEWFhYWDg4N3d3dtbW17e3t1dXVAAAAacXJUPEBFQkZKaUhVpFdpcmdrrVtSMjeEW2ZKgE6KT2FBgHVDgU5WclN7hE9mc1Aascpvo_w2AAAA/3RSTlMASR4lKkoORVE0ZlJqf3lyg4WGiYqPl5qdo6aqrLCzt7vDxs7R1NTY3N3e3+Hi5efr7O/x8/T19vf5+fr7/P3+viGrQAAAAUNJREFUSURBVDjL7dlJFsIgDAZQq3ciVwbDRV7v/4pSmGSqvU2Y98klT2JdOZp/yV-_3u89/v5+F8NqPqP5ZIA40J1cM5xTNY9gqEzQeYCaOFsD2G4S4T6ZQA6wP3wSt43fEa8A6me5a/LGA+gGlE/I/AIBbF1JYi4A0Mma1rYj550p80e+E3yXk4AASfM2eJbPTqPZ5uXu25eUCgqgQy3kLw/7QDYfX0QG5t20w8sS2uXoQTQ2Zu2t99pAgKh5602d33/EJJxE2g889sPAi2gK2t2t/YPdAFbY4v5fW+sA6O0Lmh9f1AAlm/gwwd8u4DBM2KjhmQ52hYt/6Fz3yok5sD+tQGVEfPZzgMTBL2vL48Xk//g89+ff/D93/ev7+8/0AAAAAASUVORK5CYII=');
+        opacity: 0.08;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+        position: fixed;
+        z-index: -1;
+        pointer-events: none;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
+    "react/": "https://esm.sh/react@^19.1.0/",
+    "react": "https://esm.sh/react@^19.1.0"
+  }
+}
+</script>
+
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
