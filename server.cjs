@@ -1,5 +1,7 @@
 // Combined server for Tarkov Case Sorter
 // Serves frontend static files and handles counter API
+// Production server - runs via PM2 (see ecosystem.config.cjs)
+// Port: Defaults to 5174, can be overridden via PORT environment variable
 
 const http = require('http');
 const fs = require('fs').promises;
@@ -48,6 +50,21 @@ function getMimeType(filePath) {
   return mimeTypes[ext] || 'application/octet-stream';
 }
 
+// Sanitize file path to prevent directory traversal attacks
+function sanitizePath(filePath) {
+  // Remove any path traversal attempts (../, ..\, etc.)
+  const normalized = path.normalize(filePath).replace(/^(\.\.(\/|\\|$))+/, '');
+  // Remove leading slashes and backslashes
+  return normalized.replace(/^[/\\]+/, '');
+}
+
+// Validate that resolved path is within allowed directory
+function isPathSafe(resolvedPath, allowedDir) {
+  const resolved = path.resolve(resolvedPath);
+  const allowed = path.resolve(allowedDir);
+  return resolved.startsWith(allowed);
+}
+
 // Serve static files
 async function serveStaticFile(filePath, res) {
   try {
@@ -55,7 +72,17 @@ async function serveStaticFile(filePath, res) {
     if (filePath.startsWith('/Case Images/') || filePath.startsWith('/Case%20Images/')) {
       // Handle URL encoding (spaces can be %20)
       const decodedPath = decodeURIComponent(filePath);
-      const fullPath = path.join(ROOT_DIR, decodedPath);
+      // Sanitize path to prevent directory traversal
+      const sanitized = sanitizePath(decodedPath.replace(/^\/Case Images\//, '').replace(/^\/Case%20Images\//, ''));
+      const fullPath = path.join(ROOT_DIR, 'Case Images', sanitized);
+      
+      // Security check: ensure path is within allowed directory
+      if (!isPathSafe(fullPath, path.join(ROOT_DIR, 'Case Images'))) {
+        res.writeHead(403, { 'Content-Type': 'text/plain' });
+        res.end('Forbidden: Invalid path');
+        return;
+      }
+      
       const stats = await fs.stat(fullPath);
       if (stats.isFile()) {
         res.writeHead(200, {
@@ -66,13 +93,22 @@ async function serveStaticFile(filePath, res) {
         return;
       } else {
         res.writeHead(404);
-        res.end('File Not Found: ' + decodedPath);
+        res.end('File Not Found');
         return;
       }
     }
     
     // Serve other files from dist directory
-    const fullPath = path.join(DIST_DIR, filePath === '/' ? 'index.html' : filePath);
+    const sanitized = sanitizePath(filePath === '/' ? 'index.html' : filePath);
+    const fullPath = path.join(DIST_DIR, sanitized);
+    
+    // Security check: ensure path is within dist directory
+    if (!isPathSafe(fullPath, DIST_DIR)) {
+      res.writeHead(403, { 'Content-Type': 'text/plain' });
+      res.end('Forbidden: Invalid path');
+      return;
+    }
+    
     const stats = await fs.stat(fullPath);
     
     if (stats.isFile()) {
@@ -105,7 +141,7 @@ async function serveStaticFile(filePath, res) {
       }
     } else {
       res.writeHead(404);
-      res.end('Not Found: ' + filePath);
+      res.end('Not Found');
     }
   }
 }
@@ -127,17 +163,70 @@ const server = http.createServer(async (req, res) => {
         res.end(JSON.stringify({ error: 'Failed to get count' }));
       }
     } else if (req.method === 'POST') {
-      try {
-        const currentCount = await getCount();
-        const newCount = currentCount + 1;
-        await saveCount(newCount);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ count: newCount }));
-      } catch (error) {
-        console.error('Error incrementing count:', error);
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Failed to increment count' }));
-      }
+      // Validate request body size (prevent DoS)
+      const MAX_BODY_SIZE = 1024; // 1KB should be more than enough for this endpoint
+      let body = '';
+      let bodySize = 0;
+      
+      req.on('data', (chunk) => {
+        bodySize += chunk.length;
+        if (bodySize > MAX_BODY_SIZE) {
+          res.writeHead(413, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Request body too large' }));
+          req.destroy();
+          return;
+        }
+        body += chunk.toString();
+      });
+      
+      req.on('end', async () => {
+        try {
+          // POST endpoint doesn't require a body, but if one is sent, validate it's empty or valid JSON
+          if (body && body.trim()) {
+            try {
+              JSON.parse(body);
+            } catch (parseError) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Invalid JSON in request body' }));
+              return;
+            }
+          }
+          
+          const currentCount = await getCount();
+          // Validate count is a valid number
+          if (typeof currentCount !== 'number' || currentCount < 0 || !Number.isFinite(currentCount)) {
+            console.error('Invalid count value:', currentCount);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Invalid count value' }));
+            return;
+          }
+          
+          const newCount = currentCount + 1;
+          // Ensure new count is still valid
+          if (!Number.isFinite(newCount) || newCount < 0) {
+            console.error('Invalid new count value:', newCount);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Failed to increment count' }));
+            return;
+          }
+          
+          await saveCount(newCount);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ count: newCount }));
+        } catch (error) {
+          console.error('Error incrementing count:', error);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Failed to increment count' }));
+        }
+      });
+      
+      req.on('error', (error) => {
+        console.error('Request error:', error);
+        if (!res.headersSent) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Request error' }));
+        }
+      });
     } else if (req.method === 'OPTIONS') {
       res.writeHead(200, {
         'Access-Control-Allow-Origin': '*',

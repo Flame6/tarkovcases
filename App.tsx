@@ -7,9 +7,7 @@ import { AlertTriangleIcon } from './components/Icons';
 import { optimizeStashLayout } from './services/optimizer';
 import { incrementUsageCount, getUsageCount } from './services/usageCounter';
 import type { CaseCounts, StashLayout, StashEdition, PlacedCase, CaseType } from './types';
-import { STASH_DIMENSIONS, GRID_WIDTH } from './constants';
-
-const DEFAULT_STASH_EDITION: StashEdition = 'Edge of Darkness';
+import { STASH_DIMENSIONS, GRID_WIDTH, OPTIMIZATION_DELAY, SCROLL_DELAY, DEFAULT_STASH_EDITION } from './constants';
 
 const App: React.FC = () => {
   const [caseCounts, setCaseCounts] = useState<CaseCounts>(() => {
@@ -46,35 +44,40 @@ const App: React.FC = () => {
     await getUsageCount(true); // Refresh counter
     setCaseCounts(newCaseCounts);
     setTimeout(() => {
-      const height = STASH_DIMENSIONS[edition].height;
-      // Calculate remaining counts: newCaseCounts - manually placed cases
-      const remainingCounts: CaseCounts = { ...newCaseCounts };
-      manuallyPlacedCases.forEach((placed: PlacedCase) => {
-        const type = placed.type as keyof CaseCounts;
-        remainingCounts[type] = Math.max(0, (remainingCounts[type] || 0) - 1);
+      // Use functional state update to get latest manuallyPlacedCases
+      setManuallyPlacedCases((currentManuallyPlaced) => {
+        const height = STASH_DIMENSIONS[edition].height;
+        // Calculate remaining counts: newCaseCounts - manually placed cases
+        const remainingCounts: CaseCounts = { ...newCaseCounts };
+        currentManuallyPlaced.forEach((placed: PlacedCase) => {
+          const type = placed.type as keyof CaseCounts;
+          remainingCounts[type] = Math.max(0, (remainingCounts[type] || 0) - 1);
+        });
+        // Pass all manually placed cases as "locked" constraints
+        const layout = optimizeStashLayout(remainingCounts, height, currentManuallyPlaced);
+        // Filter out manually placed cases from optimizer output (they're already in currentManuallyPlaced)
+        const manualIds = new Set(currentManuallyPlaced.map((c: PlacedCase) => c.id));
+        const autoFilledCases = layout.placedCases.filter((c: PlacedCase) => !manualIds.has(c.id));
+        // Merge manually placed cases with auto-filled cases
+        const allPlaced = [...currentManuallyPlaced, ...autoFilledCases];
+        
+        // Update caseCounts to reflect remaining (unplaced) cases
+        const finalRemaining: CaseCounts = { ...newCaseCounts };
+        allPlaced.forEach((placed: PlacedCase) => {
+          const type = placed.type as keyof CaseCounts;
+          finalRemaining[type] = Math.max(0, (finalRemaining[type] || 0) - 1);
+        });
+        setCaseCounts(finalRemaining);
+        setIsLoading(false);
+        // Scroll to stash layout section
+        setTimeout(() => {
+          stashLayoutRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, SCROLL_DELAY);
+        
+        return allPlaced;
       });
-      // Pass all manually placed cases as "locked" constraints
-      const layout = optimizeStashLayout(remainingCounts, height, manuallyPlacedCases);
-      // Filter out manually placed cases from optimizer output (they're already in manuallyPlacedCases)
-      const manualIds = new Set(manuallyPlacedCases.map((c: PlacedCase) => c.id));
-      const autoFilledCases = layout.placedCases.filter((c: PlacedCase) => !manualIds.has(c.id));
-      // Merge manually placed cases with auto-filled cases
-      const allPlaced = [...manuallyPlacedCases, ...autoFilledCases];
-      setManuallyPlacedCases(allPlaced);
-      // Update caseCounts to reflect remaining (unplaced) cases
-      const finalRemaining: CaseCounts = { ...newCaseCounts };
-      allPlaced.forEach((placed: PlacedCase) => {
-        const type = placed.type as keyof CaseCounts;
-        finalRemaining[type] = Math.max(0, (finalRemaining[type] || 0) - 1);
-      });
-      setCaseCounts(finalRemaining);
-      setIsLoading(false);
-      // Scroll to stash layout section
-      setTimeout(() => {
-        stashLayoutRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
     }, 500);
-  }, [manuallyPlacedCases]);
+  }, []);
 
   const handleOptimizeAll = useCallback(async (newCaseCounts: CaseCounts, edition: StashEdition) => {
     setIsLoading(true);
@@ -94,8 +97,8 @@ const App: React.FC = () => {
       // Scroll to stash layout section
       setTimeout(() => {
         stashLayoutRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
-    }, 500);
+      }, SCROLL_DELAY);
+    }, OPTIMIZATION_DELAY);
   }, []);
 
   const handleCasePlaced = useCallback((placedCase: PlacedCase) => {

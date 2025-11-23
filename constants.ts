@@ -1,6 +1,14 @@
-import type { CaseDefinitions, CaseType } from './types';
+import type { CaseDefinitions, CaseType, StashEdition } from './types';
 
 export const GRID_WIDTH = 10;
+
+// Default stash edition
+export const DEFAULT_STASH_EDITION: StashEdition = 'Edge of Darkness';
+
+// Timing constants (in milliseconds)
+export const OPTIMIZATION_DELAY = 500; // Delay before running optimization to allow UI updates
+export const SCROLL_DELAY = 100; // Delay before scrolling to layout after optimization
+export const CLICK_ANIMATION_DURATION = 200; // Duration for click animation feedback
 
 export const STASH_DIMENSIONS = {
   'Standard': { width: 10, height: 28 },

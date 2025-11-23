@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CASES } from '../constants';
+import { CASES, CLICK_ANIMATION_DURATION } from '../constants';
 import type { CaseType } from '../types';
 import { PlusIcon, XIcon } from './Icons';
 
@@ -36,7 +36,7 @@ export const CaseCard: React.FC<CaseCardProps> = ({
 
 
     setIsClicked(true);
-    setTimeout(() => setIsClicked(false), 200);
+    setTimeout(() => setIsClicked(false), CLICK_ANIMATION_DURATION);
     onIncrement();
   };
 

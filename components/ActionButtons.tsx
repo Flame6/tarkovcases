@@ -1,6 +1,7 @@
 import React from 'react';
 import { LoaderIcon } from './Icons';
 import type { CaseCounts, StashEdition } from '../types';
+import { DEFAULT_STASH_EDITION } from '../constants';
 
 interface ActionButtonsProps {
   onOptimize: (caseCounts: CaseCounts, edition: StashEdition) => void;
@@ -9,8 +10,6 @@ interface ActionButtonsProps {
   caseCounts: CaseCounts;
   totalCases: number;
 }
-
-const DEFAULT_STASH_EDITION: StashEdition = 'Edge of Darkness';
 
 export const ActionButtons: React.FC<ActionButtonsProps> = ({
   onOptimize,

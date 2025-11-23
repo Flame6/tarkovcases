@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CASE_TYPES } from '../constants';
+import { CASE_TYPES, DEFAULT_STASH_EDITION } from '../constants';
 import type { CaseCounts, StashEdition, CaseType } from '../types';
 import { getUsageCount, incrementUsageCount } from '../services/usageCounter';
 import { UsageCounter } from './UsageCounter';
@@ -17,7 +17,6 @@ interface InputFormProps {
 }
 
 const STORAGE_KEY = 'tarkovStashOptimizerFormData';
-const DEFAULT_STASH_EDITION: StashEdition = 'Edge of Darkness';
 
 const loadFormData = (): CaseCounts | null => {
   try {

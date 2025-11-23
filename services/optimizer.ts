@@ -1,5 +1,10 @@
-import { CASES, GRID_WIDTH } from '../constants';
-import type { CaseCounts, CaseInstance, PlacedCase, StashLayout, StashGrid } from '../types';
+import { CASES, GRID_WIDTH, CASE_TYPES } from '../constants';
+import type { CaseCounts, CaseInstance, PlacedCase, StashLayout, StashGrid, CaseType } from '../types';
+
+// Runtime validation helper to ensure caseType is valid
+function isValidCaseType(caseType: string): caseType is CaseType {
+  return CASE_TYPES.includes(caseType as CaseType);
+}
 
 export function optimizeStashLayout(
   caseCounts: CaseCounts, 
@@ -12,14 +17,20 @@ export function optimizeStashLayout(
   const caseTypeCounts: Map<string, number> = new Map();
   
   for (const caseType in caseCounts) {
-    const count = caseCounts[caseType as keyof CaseCounts];
+    // Runtime validation: skip invalid case types
+    if (!isValidCaseType(caseType)) {
+      console.warn(`Invalid case type encountered: ${caseType}`);
+      continue;
+    }
+    
+    const count = caseCounts[caseType];
     if (count > 0) {
       caseTypeCounts.set(caseType, count);
-      const caseDef = CASES[caseType as keyof CaseCounts];
+      const caseDef = CASES[caseType];
       for (let i = 0; i < count; i++) {
         allCases.push({
           id: `${caseType}-${idCounter++}`,
-          type: caseType as keyof CaseCounts,
+          type: caseType,
           width: caseDef.width,
           height: caseDef.height,
         });
