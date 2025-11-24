@@ -189,30 +189,38 @@ const App: React.FC = () => {
 
   return (
     <div className="bg-transparent text-gray-300 min-h-screen font-['Chakra_Petch']">
+      {/* Skip to main content link for accessibility */}
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-amber-500 focus:text-black focus:rounded focus:font-bold">
+        Skip to main content
+      </a>
+      
       <div className="container mx-auto px-4 py-8">
         <Header />
         
         {/* Development Warning Banner */}
-        <div className="mt-6 mb-6 p-4 bg-yellow-900/40 border border-yellow-700/50 text-yellow-300 rounded-lg">
+        <aside role="alert" aria-live="polite" className="mt-6 mb-6 p-4 bg-yellow-900/40 border border-yellow-700/50 text-yellow-300 rounded-lg">
           <div className="flex items-center gap-3">
-            <AlertTriangleIcon className="w-6 h-6 flex-shrink-0" />
+            <AlertTriangleIcon className="w-6 h-6 flex-shrink-0" aria-hidden="true" />
             <p className="font-semibold">
               ⚠️ Manual case placement is still in development. Some features may not work as expected.
             </p>
           </div>
-        </div>
+        </aside>
         
         {/* Action Buttons - Prominently displayed below warning */}
-        <ActionButtons
-          onOptimize={handleOptimize}
-          onOptimizeAll={handleOptimizeAll}
-          isLoading={isLoading}
-          caseCounts={totalOwnedCaseCounts}
-          totalCases={totalCases}
-        />
+        <section id="optimization-actions" aria-label="Optimization actions" className="sticky top-0 z-50 -mx-4 px-4">
+          <ActionButtons
+            onOptimize={handleOptimize}
+            onOptimizeAll={handleOptimizeAll}
+            isLoading={isLoading}
+            caseCounts={totalOwnedCaseCounts}
+            totalCases={totalCases}
+          />
+        </section>
 
-        <main className="mt-8 flex flex-wrap -mx-4">
-          <div className="w-full lg:w-1/2 px-4 mb-8 lg:mb-0">
+        <main id="main-content" className="mt-8 flex flex-wrap -mx-4" role="main">
+          <section id="case-input-form" className="w-full lg:w-1/2 px-4 mb-8 lg:mb-0" aria-label="Case input form">
+            <h2 className="sr-only">Case Input Form</h2>
             <div className="bg-[#2D2D2D]/80 backdrop-blur-sm p-6 sm:p-8 shadow-2xl border border-white/20 h-full">
               <InputForm 
                 onOptimize={handleOptimize}
@@ -224,8 +232,9 @@ const App: React.FC = () => {
                 placedCounts={placedCounts}
               />
             </div>
-          </div>
-          <div className="w-full lg:w-1/2 px-4">
+          </section>
+          <section id="stash-layout" className="w-full lg:w-1/2 px-4" aria-label="Stash layout preview">
+            <h2 className="sr-only">Stash Layout Preview</h2>
             <div ref={stashLayoutRef} className="bg-[#2D2D2D]/80 backdrop-blur-sm p-6 sm:p-8 shadow-2xl border border-white/20 h-full">
               {currentLayout ? (
                 <StashGridDisplay
@@ -242,10 +251,15 @@ const App: React.FC = () => {
                 </div>
               )}
             </div>
-          </div>
+          </section>
         </main>
-        <footer className="text-center mt-8 text-gray-500 text-sm">
-          <p>This is a fan-made tool and is not affiliated with Battlestate Games.</p>
+        <footer className="text-center mt-8 text-gray-500 text-sm" role="contentinfo">
+          <p className="mb-4">This is a fan-made tool and is not affiliated with Battlestate Games.</p>
+          <div className="max-w-4xl mx-auto px-4">
+            <p className="text-gray-400 text-sm leading-relaxed">
+              Use Tarkov Stash Optimizer to calculate optimal case layouts for Escape from Tarkov. This free web tool helps you maximize your stash space efficiency by automatically arranging cases for the best fit. Whether you're organizing Item Cases, Weapon Cases, THICC Cases, or any other storage container, our optimizer supports all stash editions including Standard, Left Behind, Prepare for Escape, and Edge of Darkness. Simply enter your case counts and let the algorithm find the optimal layout, or manually drag and drop cases to customize your arrangement.
+            </p>
+          </div>
         </footer>
       </div>
     </div>

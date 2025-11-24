@@ -426,6 +426,8 @@ export const StashGridDisplay: React.FC<StashGridDisplayProps> = ({
                   <img
                     src={item.rotated ? CASES[item.type].rotatedImage : CASES[item.type].image}
                     alt={CASES[item.type].name}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -462,7 +464,7 @@ export const StashGridDisplay: React.FC<StashGridDisplayProps> = ({
             {unplacedCases.map((item: { type: CaseType }, index: number) => (
               <div key={index} className="flex items-center gap-2 p-2 bg-[#1a1a1a] border border-white/30">
                 {CASES[item.type].image ? (
-                  <img src={CASES[item.type].image} alt={CASES[item.type].name} className="w-8 h-8 object-contain bg-black/40" />
+                  <img src={CASES[item.type].image} alt={CASES[item.type].name} loading="lazy" decoding="async" className="w-8 h-8 object-contain bg-black/40" />
                 ) : (
                   <div className={`w-8 h-8 flex items-center justify-center ${CASES[item.type].color} border border-gray-600`}>
                     <span className="text-xs font-bold text-gray-300">{CASES[item.type].width}×{CASES[item.type].height}</span>

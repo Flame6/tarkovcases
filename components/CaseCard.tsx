@@ -117,6 +117,9 @@ export const CaseCard: React.FC<CaseCardProps> = ({
           <img 
             src={caseData.image} 
             alt={caseData.name}
+            loading="lazy"
+            decoding="async"
+            fetchpriority={isActive && owned <= 3 ? "high" : "auto"}
             className="max-w-full max-h-full object-contain bg-black/30 p-2 border border-gray-700"
           />
         ) : (

@@ -30,7 +30,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   };
 
   return (
-    <div className="sticky top-0 z-50 mb-4 py-2 px-3 bg-[#2D2D2D]/95 backdrop-blur-md border border-white/20 rounded shadow-xl">
+    <div className="mb-4 py-2 px-3 bg-[#2D2D2D]/95 backdrop-blur-md border border-white/20 rounded shadow-xl">
       <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
         {onOptimizeAll && (
           <button

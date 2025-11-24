@@ -24,6 +24,7 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
-      }
+      },
+      publicDir: 'public'
     };
 });

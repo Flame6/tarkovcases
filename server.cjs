@@ -2,6 +2,12 @@
 // Serves frontend static files and handles counter API
 // Production server - runs via PM2 (see ecosystem.config.cjs)
 // Port: Defaults to 5174, can be overridden via PORT environment variable
+//
+// Note: Compression (gzip/Brotli) should be configured in your Caddy reverse proxy.
+// Add to your Caddyfile:
+//   encode gzip zstd
+//   or
+//   encode gzip brotli
 
 const http = require('http');
 const fs = require('fs').promises;
@@ -43,6 +49,8 @@ const mimeTypes = {
   '.ttf': 'application/font-ttf',
   '.eot': 'application/vnd.ms-fontobject',
   '.otf': 'application/font-otf',
+  '.txt': 'text/plain',
+  '.xml': 'application/xml',
 };
 
 function getMimeType(filePath) {
@@ -65,6 +73,36 @@ function isPathSafe(resolvedPath, allowedDir) {
   return resolved.startsWith(allowed);
 }
 
+// Helper function to get cache control headers
+function getCacheHeaders(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  // Cache static assets for 1 year
+  if (['.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.woff', '.woff2', '.ttf', '.eot', '.otf'].includes(ext)) {
+    return {
+      'Cache-Control': 'public, max-age=31536000, immutable'
+    };
+  }
+  // Cache HTML for shorter period
+  if (ext === '.html') {
+    return {
+      'Cache-Control': 'public, max-age=3600'
+    };
+  }
+  // Default cache for other files
+  return {
+    'Cache-Control': 'public, max-age=86400'
+  };
+}
+
+// Helper function to get security headers
+function getSecurityHeaders() {
+  return {
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'strict-origin-when-cross-origin'
+  };
+}
+
 // Serve static files
 async function serveStaticFile(filePath, res) {
   try {
@@ -78,7 +116,10 @@ async function serveStaticFile(filePath, res) {
       
       // Security check: ensure path is within allowed directory
       if (!isPathSafe(fullPath, path.join(ROOT_DIR, 'Case Images'))) {
-        res.writeHead(403, { 'Content-Type': 'text/plain' });
+        res.writeHead(403, { 
+          'Content-Type': 'text/plain',
+          ...getSecurityHeaders()
+        });
         res.end('Forbidden: Invalid path');
         return;
       }
@@ -88,11 +129,13 @@ async function serveStaticFile(filePath, res) {
         res.writeHead(200, {
           'Content-Type': getMimeType(fullPath),
           'Content-Length': stats.size,
+          ...getCacheHeaders(fullPath),
+          ...getSecurityHeaders()
         });
         createReadStream(fullPath).pipe(res);
         return;
       } else {
-        res.writeHead(404);
+        res.writeHead(404, getSecurityHeaders());
         res.end('File Not Found');
         return;
       }
@@ -104,7 +147,10 @@ async function serveStaticFile(filePath, res) {
     
     // Security check: ensure path is within dist directory
     if (!isPathSafe(fullPath, DIST_DIR)) {
-      res.writeHead(403, { 'Content-Type': 'text/plain' });
+      res.writeHead(403, { 
+        'Content-Type': 'text/plain',
+        ...getSecurityHeaders()
+      });
       res.end('Forbidden: Invalid path');
       return;
     }
@@ -115,10 +161,12 @@ async function serveStaticFile(filePath, res) {
       res.writeHead(200, {
         'Content-Type': getMimeType(fullPath),
         'Content-Length': stats.size,
+        ...getCacheHeaders(fullPath),
+        ...getSecurityHeaders()
       });
       createReadStream(fullPath).pipe(res);
     } else {
-      res.writeHead(404);
+      res.writeHead(404, getSecurityHeaders());
       res.end('Not Found');
     }
   } catch (error) {
@@ -133,14 +181,16 @@ async function serveStaticFile(filePath, res) {
         res.writeHead(200, {
           'Content-Type': 'text/html',
           'Content-Length': stats.size,
+          ...getCacheHeaders(indexPath),
+          ...getSecurityHeaders()
         });
         createReadStream(indexPath).pipe(res);
       } catch {
-        res.writeHead(404);
+        res.writeHead(404, getSecurityHeaders());
         res.end('Not Found');
       }
     } else {
-      res.writeHead(404);
+      res.writeHead(404, getSecurityHeaders());
       res.end('Not Found');
     }
   }
@@ -150,16 +200,25 @@ const server = http.createServer(async (req, res) => {
   // Parse URL manually to handle spaces correctly
   let pathname = req.url.split('?')[0]; // Remove query string
   
+  // Add security headers to all responses
+  const securityHeaders = getSecurityHeaders();
+  
   // Handle counter API endpoint
   if (pathname === '/tarkov-optimizer/count') {
     if (req.method === 'GET') {
       try {
         const count = await getCount();
-        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.writeHead(200, { 
+          'Content-Type': 'application/json',
+          ...securityHeaders
+        });
         res.end(JSON.stringify({ count }));
       } catch (error) {
         console.error('Error getting count:', error);
-        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.writeHead(500, { 
+          'Content-Type': 'application/json',
+          ...securityHeaders
+        });
         res.end(JSON.stringify({ error: 'Failed to get count' }));
       }
     } else if (req.method === 'POST') {
@@ -211,11 +270,17 @@ const server = http.createServer(async (req, res) => {
           }
           
           await saveCount(newCount);
-          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.writeHead(200, { 
+            'Content-Type': 'application/json',
+            ...securityHeaders
+          });
           res.end(JSON.stringify({ count: newCount }));
         } catch (error) {
           console.error('Error incrementing count:', error);
-          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.writeHead(500, { 
+            'Content-Type': 'application/json',
+            ...securityHeaders
+          });
           res.end(JSON.stringify({ error: 'Failed to increment count' }));
         }
       });
@@ -223,7 +288,10 @@ const server = http.createServer(async (req, res) => {
       req.on('error', (error) => {
         console.error('Request error:', error);
         if (!res.headersSent) {
-          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.writeHead(500, { 
+            'Content-Type': 'application/json',
+            ...securityHeaders
+          });
           res.end(JSON.stringify({ error: 'Request error' }));
         }
       });
@@ -232,10 +300,11 @@ const server = http.createServer(async (req, res) => {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
+        ...securityHeaders
       });
       res.end();
     } else {
-      res.writeHead(405);
+      res.writeHead(405, securityHeaders);
       res.end();
     }
     return;
