@@ -3,7 +3,7 @@ import { InputForm } from './components/InputForm';
 import { StashGridDisplay } from './components/StashGridDisplay';
 import { Header } from './components/Header';
 import { ActionButtons } from './components/ActionButtons';
-import { AlertTriangleIcon } from './components/Icons';
+import { TarkovExclamationIcon } from './components/Icons';
 import { optimizeStashLayout } from './services/optimizer';
 import { incrementUsageCount, getUsageCount } from './services/usageCounter';
 import type { CaseCounts, StashLayout, StashEdition, PlacedCase, CaseType } from './types';
@@ -197,15 +197,68 @@ const App: React.FC = () => {
       <div className="container mx-auto px-4 py-8">
         <Header />
         
-        {/* Development Warning Banner */}
-        <aside role="alert" aria-live="polite" className="mt-6 mb-6 p-4 bg-yellow-900/40 border border-yellow-700/50 text-yellow-300 rounded-lg">
-          <div className="flex items-center gap-3">
-            <AlertTriangleIcon className="w-6 h-6 flex-shrink-0" aria-hidden="true" />
-            <p className="font-semibold">
-              ⚠️ Manual case placement is still in development. Some features may not work as expected.
-            </p>
-          </div>
-        </aside>
+        {/* Tarkov-Style Beta Warning Banner */}
+        <div className="flex justify-center mt-6 mb-6">
+          <aside 
+            role="alert" 
+            aria-live="polite" 
+            className="inline-flex items-center" 
+            style={{ 
+              backgroundColor: '#c67826',
+              padding: '14px 22px',
+              gap: '16px',
+              boxShadow: '0 0 0 2px #111',
+              fontFamily: "'Rajdhani', system-ui, sans-serif"
+            }}
+          >
+            <div 
+              className="flex items-center justify-center flex-shrink-0"
+              style={{ 
+                width: '48px', 
+                height: '48px', 
+                borderRadius: '50%', 
+                background: '#000' 
+              }}
+            >
+              <span style={{ color: '#f6d98b', fontSize: '28px', marginTop: '-2px', fontWeight: 600 }}>!</span>
+            </div>
+            <div className="flex flex-col" style={{ gap: '2px' }}>
+              <p 
+                className="uppercase"
+                style={{ 
+                  fontSize: '24px', 
+                  fontWeight: 700, 
+                  letterSpacing: '0.02em', 
+                  lineHeight: 1.05,
+                  color: '#000000'
+                }}
+              >
+                Attention! This is a Beta version of the Tarkov Stash Optimizer for testing purposes.
+              </p>
+              <p 
+                style={{ 
+                  fontSize: '15px', 
+                  fontWeight: 400, 
+                  letterSpacing: '0.01em', 
+                  color: '#1a1a1a',
+                  marginTop: '2px'
+                }}
+              >
+                It doesn't represent the final quality of the tool. Thank you for your understanding and support. Good luck!
+              </p>
+              <p 
+                className="italic"
+                style={{ 
+                  fontSize: '13px', 
+                  color: '#1a1a1a',
+                  marginTop: '4px'
+                }}
+              >
+                Note: Manual case placement is still under development and may not function as intended.
+              </p>
+            </div>
+          </aside>
+        </div>
         
         {/* Action Buttons - Prominently displayed below warning */}
         <section id="optimization-actions" aria-label="Optimization actions" className="sticky top-0 z-50 -mx-4 px-4">

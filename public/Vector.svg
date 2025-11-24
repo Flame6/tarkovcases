@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Storage case icon">
+  <defs>
+    <!-- Body gradient -->
+    <linearGradient id="bodyGrad" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#323232"></stop>
+      <stop offset="100%" stop-color="#202020"></stop>
+    </linearGradient>
+    <!-- Lid gradient -->
+    <linearGradient id="lidGrad" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#707070"></stop>
+      <stop offset="100%" stop-color="#4f4f4f"></stop>
+    </linearGradient>
+    <!-- Inner lid bevel -->
+    <linearGradient id="lidInnerGrad" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#7a7a7a"></stop>
+      <stop offset="100%" stop-color="#555555"></stop>
+    </linearGradient>
+    <!-- Subtle body glow -->
+    <radialGradient id="bodyGlow" cx="50%" cy="45%" r="60%">
+      <stop offset="0%" stop-color="#3b3b3b" stop-opacity="0.7"></stop>
+      <stop offset="100%" stop-color="#202020" stop-opacity="0"></stop>
+    </radialGradient>
+  </defs>
+
+  <!-- Transparent background; change if you want a solid bg -->
+  <rect width="512" height="512" fill="none"></rect>
+
+  <!-- Case body -->
+  <g>
+    <!-- Main body block -->
+    <rect x="64" y="176" width="384" height="260" rx="14" fill="url(#bodyGrad)" stroke="#141414" stroke-width="4"></rect>
+    <!-- Inner panel -->
+    <rect x="80" y="190" width="352" height="236" rx="10" fill="none" stroke="#3a3a3a" stroke-width="3"></rect>
+
+    <!-- Vertical ribs -->
+    <g stroke="#3a3a3a" stroke-width="6" stroke-linecap="round">
+      <line x1="132" y1="200" x2="132" y2="430"></line>
+      <line x1="192" y1="200" x2="192" y2="430"></line>
+      <line x1="256" y1="200" x2="256" y2="430"></line>
+      <line x1="320" y1="200" x2="320" y2="430"></line>
+      <line x1="380" y1="200" x2="380" y2="430"></line>
+    </g>
+
+    <!-- Soft center darkening -->
+    <rect x="64" y="176" width="384" height="260" rx="14" fill="url(#bodyGlow)"></rect>
+  </g>
+
+  <!-- Lid group -->
+  <g>
+    <!-- Lid main slab -->
+    <rect x="70" y="122" width="372" height="70" rx="10" fill="url(#lidGrad)" stroke="#242424" stroke-width="4"></rect>
+
+    <!-- Raised central panel -->
+    <rect x="112" y="130" width="288" height="54" rx="6" fill="url(#lidInnerGrad)"></rect>
+
+    <!-- Lid top lip -->
+    <rect x="84" y="110" width="344" height="16" rx="8" fill="#5f5f5f"></rect>
+
+    <!-- Subtle groove line on lid -->
+    <rect x="136" y="156" width="240" height="3" rx="1.5" fill="#8a8a8a" opacity="0.4"></rect>
+  </g>
+
+  <!-- Latches -->
+  <g fill="#4c4c4c" stroke="#262626" stroke-width="3">
+    <rect x="148" y="170" width="30" height="30" rx="4"></rect>
+    <rect x="334" y="170" width="30" height="30" rx="4"></rect>
+  </g>
+
+  <!-- Side handles -->
+  <g fill="#2a2a2a" stroke="#171717" stroke-width="4">
+    <!-- Left handle mount -->
+    <rect x="56" y="196" width="24" height="96" rx="6"></rect>
+    <!-- Left handle bar -->
+    <path d="M60 210 h40 a10 10 0 0 1 10 10 v52 a10 10 0 0 1 -10 10 h-40
+             a10 10 0 0 1 -10 -10 v-52 a10 10 0 0 1 10 -10 z" fill="#252525"></path>
+
+    <!-- Right handle mount -->
+    <rect x="432" y="196" width="24" height="96" rx="6"></rect>
+    <!-- Right handle bar -->
+    <path d="M412 210 h40 a10 10 0 0 1 10 10 v52 a10 10 0 0 1 -10 10 h-40
+             a10 10 0 0 1 -10 -10 v-52 a10 10 0 0 1 10 -10 z" fill="#252525"></path>
+  </g>
+</svg>

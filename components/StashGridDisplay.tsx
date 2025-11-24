@@ -439,6 +439,11 @@ export const StashGridDisplay: React.FC<StashGridDisplayProps> = ({
                       <div className="text-xs text-gray-400 uppercase">
                         Custom
                       </div>
+                      {item.rotated && (
+                        <div className="text-xs text-gray-500 uppercase mt-0.5">
+                          Rotated
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

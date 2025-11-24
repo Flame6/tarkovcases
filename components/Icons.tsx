@@ -85,3 +85,20 @@ export const RotateIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
         <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
     </svg>
 );
+
+export const TarkovExclamationIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => {
+  const { style, ...restProps } = props;
+  const shouldStretch = style?.height === '100%';
+  
+  return (
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      viewBox="0 0 24 24" 
+      preserveAspectRatio={shouldStretch ? "none" : "xMidYMid meet"}
+      style={{ width: '100%', height: '100%', ...style }}
+      {...restProps}
+    >
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="#000000" />
+    </svg>
+  );
+};
