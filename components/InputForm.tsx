@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CASE_TYPES, DEFAULT_STASH_EDITION } from '../constants';
 import type { CaseCounts, StashEdition, CaseType } from '../types';
 import { getUsageCount, incrementUsageCount } from '../services/usageCounter';
@@ -84,9 +84,18 @@ export const InputForm: React.FC<InputFormProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  // Save form data whenever it changes
+  // Save form data whenever it changes (but skip initial empty state)
+  const isInitialMount = useRef(true);
   useEffect(() => {
-    saveFormData(caseCounts);
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return; // Skip saving on initial mount
+    }
+    // Only save if there are actual counts
+    const hasAnyCounts = Object.values(caseCounts).some(count => count > 0);
+    if (hasAnyCounts) {
+      saveFormData(caseCounts);
+    }
   }, [caseCounts]);
 
   const handleIncrement = (caseType: CaseType) => {
@@ -100,6 +109,13 @@ export const InputForm: React.FC<InputFormProps> = ({
     setCaseCounts(prev => ({
       ...prev,
       [caseType]: 0,
+    }));
+  };
+
+  const handleDecrement = (caseType: CaseType) => {
+    setCaseCounts(prev => ({
+      ...prev,
+      [caseType]: Math.max(0, (prev[caseType] || 0) - 1),
     }));
   };
 
@@ -145,7 +161,7 @@ export const InputForm: React.FC<InputFormProps> = ({
             count={caseCounts[type] || 0}
             onIncrement={() => handleIncrement(type)}
             onReset={() => handleReset(type)}
-            onDecrement={onDecrement ? () => onDecrement(type) : undefined}
+            onDecrement={() => handleDecrement(type)}
             placedCount={placedCounts?.[type] || 0}
           />
         ))}
@@ -177,7 +193,7 @@ export const InputForm: React.FC<InputFormProps> = ({
                 count={caseCounts[type] || 0}
                 onIncrement={() => handleIncrement(type)}
                 onReset={() => handleReset(type)}
-                onDecrement={onDecrement ? () => onDecrement(type) : undefined}
+                onDecrement={() => handleDecrement(type)}
                 placedCount={placedCounts?.[type] || 0}
               />
             ))}

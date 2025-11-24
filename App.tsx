@@ -7,21 +7,29 @@ import { AlertTriangleIcon } from './components/Icons';
 import { optimizeStashLayout } from './services/optimizer';
 import { incrementUsageCount, getUsageCount } from './services/usageCounter';
 import type { CaseCounts, StashLayout, StashEdition, PlacedCase, CaseType } from './types';
-import { STASH_DIMENSIONS, GRID_WIDTH, OPTIMIZATION_DELAY, SCROLL_DELAY, DEFAULT_STASH_EDITION } from './constants';
+import { STASH_DIMENSIONS, GRID_WIDTH, OPTIMIZATION_DELAY, SCROLL_DELAY, DEFAULT_STASH_EDITION, CASE_TYPES } from './constants';
 
 const App: React.FC = () => {
   const [caseCounts, setCaseCounts] = useState<CaseCounts>(() => {
+    // Initialize with all case types set to 0
+    const initialCounts = Object.fromEntries(
+      CASE_TYPES.map(type => [type, 0])
+    ) as CaseCounts;
+    
     // Load from InputForm's storage if available
     try {
       const stored = localStorage.getItem('tarkovStashOptimizerFormData');
       if (stored) {
         const data = JSON.parse(stored);
-        return data.caseCounts || {};
+        if (data.caseCounts) {
+          // Merge saved counts with initial counts to ensure all types exist
+          return { ...initialCounts, ...data.caseCounts };
+        }
       }
     } catch (error) {
       console.error('Could not load case counts', error);
     }
-    return {} as CaseCounts;
+    return initialCounts;
   });
   const [manuallyPlacedCases, setManuallyPlacedCases] = useState<PlacedCase[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);

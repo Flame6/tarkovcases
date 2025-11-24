@@ -429,7 +429,7 @@ export const StashGridDisplay: React.FC<StashGridDisplayProps> = ({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-black/40 border border-gray-600">
+                  <div className={`w-full h-full flex items-center justify-center ${CASES[item.type].color} border border-gray-600`}>
                     <div className="text-center">
                       <div className="text-lg font-bold text-gray-300">
                         {item.width}×{item.height}
@@ -464,7 +464,7 @@ export const StashGridDisplay: React.FC<StashGridDisplayProps> = ({
                 {CASES[item.type].image ? (
                   <img src={CASES[item.type].image} alt={CASES[item.type].name} className="w-8 h-8 object-contain bg-black/40" />
                 ) : (
-                  <div className="w-8 h-8 flex items-center justify-center bg-black/40 border border-gray-600">
+                  <div className={`w-8 h-8 flex items-center justify-center ${CASES[item.type].color} border border-gray-600`}>
                     <span className="text-xs font-bold text-gray-300">{CASES[item.type].width}×{CASES[item.type].height}</span>
                   </div>
                 )}
