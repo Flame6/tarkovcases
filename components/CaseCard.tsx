@@ -9,6 +9,7 @@ interface CaseCardProps {
   onIncrement: () => void;
   onReset: () => void;
   onDecrement?: () => void;
+  onRemovePlacedCase?: () => void;
   placedCount?: number;
 }
 
@@ -18,6 +19,7 @@ export const CaseCard: React.FC<CaseCardProps> = ({
   onIncrement, 
   onReset,
   onDecrement,
+  onRemovePlacedCase,
   placedCount = 0
 }) => {
   const [isClicked, setIsClicked] = useState(false);
@@ -79,7 +81,12 @@ export const CaseCard: React.FC<CaseCardProps> = ({
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (onDecrement && owned > 0) {
+    // If there are placed cases, remove the lower/right most one
+    if (onRemovePlacedCase && placedCount > 0) {
+      onRemovePlacedCase();
+    } 
+    // Otherwise, if there are remaining cases, decrement the count
+    else if (onDecrement && count > 0) {
       onDecrement();
     }
   };
@@ -161,6 +168,11 @@ export const CaseCard: React.FC<CaseCardProps> = ({
         ) : (
           <div className="text-xs text-gray-500 text-center case-card-hint">
             Click to add | Right-click to remove
+          </div>
+        )}
+        {isActive && placedCount > 0 && (
+          <div className="text-xs text-gray-500 text-center mt-1">
+            Right-click to remove placed case
           </div>
         )}
       </div>

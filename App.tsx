@@ -35,6 +35,12 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const stashHeight = STASH_DIMENSIONS[DEFAULT_STASH_EDITION].height;
   const stashLayoutRef = useRef<HTMLDivElement>(null);
+  const caseCountsRef = useRef<CaseCounts>(caseCounts);
+  
+  // Keep ref in sync with state
+  useEffect(() => {
+    caseCountsRef.current = caseCounts;
+  }, [caseCounts]);
 
   // Calculate placed counts for display - recalculate when manuallyPlacedCases changes
   const placedCounts: CaseCounts = useMemo(() => {
@@ -50,26 +56,32 @@ const App: React.FC = () => {
     setIsLoading(true);
     await incrementUsageCount();
     await getUsageCount(true); // Refresh counter
-    setCaseCounts(newCaseCounts);
+    // newCaseCounts is total owned (remaining + placed) from the form
     setTimeout(() => {
       // Use functional state update to get latest manuallyPlacedCases
       setManuallyPlacedCases((currentManuallyPlaced) => {
         const height = STASH_DIMENSIONS[edition].height;
-        // Calculate remaining counts: newCaseCounts - manually placed cases
+        // Calculate remaining counts: newCaseCounts (total owned) - manually placed cases
         const remainingCounts: CaseCounts = { ...newCaseCounts };
         currentManuallyPlaced.forEach((placed: PlacedCase) => {
           const type = placed.type as keyof CaseCounts;
           remainingCounts[type] = Math.max(0, (remainingCounts[type] || 0) - 1);
         });
-        // Pass all manually placed cases as "locked" constraints
-        const layout = optimizeStashLayout(remainingCounts, height, currentManuallyPlaced);
-        // Filter out manually placed cases from optimizer output (they're already in currentManuallyPlaced)
-        const manualIds = new Set(currentManuallyPlaced.map((c: PlacedCase) => c.id));
-        const autoFilledCases = layout.placedCases.filter((c: PlacedCase) => !manualIds.has(c.id));
-        // Merge manually placed cases with auto-filled cases
-        const allPlaced = [...currentManuallyPlaced, ...autoFilledCases];
+        // Separate locked (manually placed) from unlocked (auto-placed) cases
+        const lockedCases = currentManuallyPlaced.filter(c => c.isLocked);
+        
+        // Pass only locked cases as constraints (auto-placed cases will be re-optimized)
+        const layout = optimizeStashLayout(remainingCounts, height, lockedCases);
+        
+        // Filter out locked cases from optimizer output (they're already locked)
+        const lockedIds = new Set(lockedCases.map((c: PlacedCase) => c.id));
+        const autoFilledCases = layout.placedCases.filter((c: PlacedCase) => !lockedIds.has(c.id));
+        
+        // Merge locked (manual) cases with auto-filled cases
+        const allPlaced = [...lockedCases, ...autoFilledCases];
         
         // Update caseCounts to reflect remaining (unplaced) cases
+        // finalRemaining = newCaseCounts (total owned) - all placed
         const finalRemaining: CaseCounts = { ...newCaseCounts };
         allPlaced.forEach((placed: PlacedCase) => {
           const type = placed.type as keyof CaseCounts;
@@ -110,12 +122,62 @@ const App: React.FC = () => {
   }, []);
 
   const handleCasePlaced = useCallback((placedCase: PlacedCase) => {
-    setManuallyPlacedCases(prev => [...prev, placedCase]);
-    // Decrement count
-    setCaseCounts(prev => ({
-      ...prev,
-      [placedCase.type]: Math.max(0, (prev[placedCase.type] || 0) - 1),
-    }));
+    // Mark manually placed cases as locked
+    const lockedCase: PlacedCase = { ...placedCase, isLocked: true };
+    
+    setManuallyPlacedCases((currentPlaced) => {
+      // Add the new manually placed (locked) case
+      const updatedPlaced = [...currentPlaced, lockedCase];
+      
+      // Separate locked (manually placed) from unlocked (auto-placed)
+      const lockedCases = updatedPlaced.filter(c => c.isLocked);
+      
+      // Calculate total owned counts: current remaining + all placed cases
+      const totalOwned: CaseCounts = {} as CaseCounts;
+      
+      // Start with current caseCounts (remaining) - use ref to get latest value
+      const currentCounts = caseCountsRef.current;
+      Object.keys(currentCounts).forEach((type) => {
+        const key = type as keyof CaseCounts;
+        totalOwned[key] = currentCounts[key] || 0;
+      });
+      
+      // Add all placed cases to total owned
+      updatedPlaced.forEach((placed: PlacedCase) => {
+        const type = placed.type as keyof CaseCounts;
+        totalOwned[type] = (totalOwned[type] || 0) + 1;
+      });
+      
+      // Calculate remaining counts: total owned - all placed
+      const remainingCounts: CaseCounts = { ...totalOwned };
+      updatedPlaced.forEach((placed: PlacedCase) => {
+        const type = placed.type as keyof CaseCounts;
+        remainingCounts[type] = Math.max(0, (remainingCounts[type] || 0) - 1);
+      });
+      
+      // Re-optimize with locked cases as constraints
+      const height = STASH_DIMENSIONS[DEFAULT_STASH_EDITION].height;
+      const layout = optimizeStashLayout(remainingCounts, height, lockedCases);
+      
+      // Filter out locked cases from optimizer output (they're already locked)
+      const lockedIds = new Set(lockedCases.map((c: PlacedCase) => c.id));
+      const autoFilledCases = layout.placedCases.filter((c: PlacedCase) => !lockedIds.has(c.id));
+      
+      // Merge locked (manual) cases with auto-filled cases
+      const allPlaced = [...lockedCases, ...autoFilledCases];
+      
+      // Update caseCounts to reflect remaining (unplaced) cases
+      const finalRemaining: CaseCounts = { ...totalOwned };
+      allPlaced.forEach((placed: PlacedCase) => {
+        const type = placed.type as keyof CaseCounts;
+        finalRemaining[type] = Math.max(0, (finalRemaining[type] || 0) - 1);
+      });
+      
+      // Update counts
+      setCaseCounts(finalRemaining);
+      
+      return allPlaced;
+    });
   }, []);
 
   const handleCaseRemoved = useCallback((caseId: string) => {
@@ -129,6 +191,34 @@ const App: React.FC = () => {
       }));
     }
   }, [manuallyPlacedCases]);
+
+  const handleRemovePlacedCase = useCallback((caseType: CaseType) => {
+    // Find all cases of this type
+    const casesOfType = manuallyPlacedCases.filter(c => c.type === caseType);
+    
+    if (casesOfType.length === 0) {
+      return; // No cases of this type to remove
+    }
+    
+    // Find the lower/right most case
+    // Sort by y position descending (lower first), then x position descending (right first)
+    const sortedCases = [...casesOfType].sort((a, b) => {
+      // First compare by bottom edge (y + height) - lower is better
+      const aBottom = a.y + a.height;
+      const bBottom = b.y + b.height;
+      if (aBottom !== bBottom) {
+        return bBottom - aBottom; // Descending: lower first
+      }
+      // If same row, compare by right edge (x + width) - right is better
+      const aRight = a.x + a.width;
+      const bRight = b.x + b.width;
+      return bRight - aRight; // Descending: right first
+    });
+    
+    // Remove the first one (lowest/rightmost)
+    const caseToRemove = sortedCases[0];
+    handleCaseRemoved(caseToRemove.id);
+  }, [manuallyPlacedCases, handleCaseRemoved]);
 
   const handleCaseMoved = useCallback((caseId: string, newX: number, newY: number, newWidth?: number, newHeight?: number, newRotated?: boolean) => {
     setManuallyPlacedCases(prev => prev.map(c => 
@@ -279,9 +369,29 @@ const App: React.FC = () => {
                 onOptimize={handleOptimize}
                 onOptimizeAll={handleOptimizeAll}
                 isLoading={isLoading}
-                caseCounts={caseCounts}
-                onCaseCountsChange={setCaseCounts}
+                caseCounts={totalOwnedCaseCounts}
+                onCaseCountsChange={(newTotalOwned) => {
+                  // When user changes counts in form, update remaining counts
+                  // newTotalOwned = remaining + placed, so remaining = newTotalOwned - placed
+                  const newRemaining: CaseCounts = {} as CaseCounts;
+                  Object.keys(newTotalOwned).forEach((type) => {
+                    const key = type as keyof CaseCounts;
+                    const total = newTotalOwned[key] || 0;
+                    const placed = placedCounts[key] || 0;
+                    newRemaining[key] = Math.max(0, total - placed);
+                  });
+                  setCaseCounts(newRemaining);
+                }}
                 onDecrement={handleCaseDecrement}
+                onRemovePlacedCase={handleRemovePlacedCase}
+                onClearAll={() => {
+                  // Clear all placed cases and reset counts
+                  setManuallyPlacedCases([]);
+                  const initialCounts = Object.fromEntries(
+                    CASE_TYPES.map(type => [type, 0])
+                  ) as CaseCounts;
+                  setCaseCounts(initialCounts);
+                }}
                 placedCounts={placedCounts}
               />
             </div>

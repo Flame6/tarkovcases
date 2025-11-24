@@ -13,6 +13,8 @@ interface InputFormProps {
   caseCounts?: CaseCounts;
   onCaseCountsChange?: (counts: CaseCounts) => void;
   onDecrement?: (caseType: CaseType) => void;
+  onRemovePlacedCase?: (caseType: CaseType) => void;
+  onClearAll?: () => void;
   placedCounts?: CaseCounts;
 }
 
@@ -52,6 +54,8 @@ export const InputForm: React.FC<InputFormProps> = ({
   caseCounts: externalCaseCounts,
   onCaseCountsChange,
   onDecrement,
+  onRemovePlacedCase,
+  onClearAll,
   placedCounts
 }) => {
   const initialCounts = Object.fromEntries(
@@ -99,24 +103,30 @@ export const InputForm: React.FC<InputFormProps> = ({
   }, [caseCounts]);
 
   const handleIncrement = (caseType: CaseType) => {
-    setCaseCounts(prev => ({
-      ...prev,
-      [caseType]: (prev[caseType] || 0) + 1,
-    }));
+    // Calculate new total owned (current + 1)
+    const currentTotal = caseCounts[caseType] || 0;
+    const newTotalOwned = {
+      ...caseCounts,
+      [caseType]: currentTotal + 1,
+    };
+    setCaseCounts(newTotalOwned);
   };
 
   const handleReset = (caseType: CaseType) => {
-    setCaseCounts(prev => ({
-      ...prev,
+    const newTotalOwned = {
+      ...caseCounts,
       [caseType]: 0,
-    }));
+    };
+    setCaseCounts(newTotalOwned);
   };
 
   const handleDecrement = (caseType: CaseType) => {
-    setCaseCounts(prev => ({
-      ...prev,
-      [caseType]: Math.max(0, (prev[caseType] || 0) - 1),
-    }));
+    const currentTotal = caseCounts[caseType] || 0;
+    const newTotalOwned = {
+      ...caseCounts,
+      [caseType]: Math.max(0, currentTotal - 1),
+    };
+    setCaseCounts(newTotalOwned);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -139,6 +149,10 @@ export const InputForm: React.FC<InputFormProps> = ({
   const handleClear = () => {
     setCaseCounts(initialCounts);
     localStorage.removeItem(STORAGE_KEY);
+    // Also clear all placed cases if handler is provided
+    if (onClearAll) {
+      onClearAll();
+    }
   };
   
   const totalCases = Object.values(caseCounts).reduce((sum: number, count: number) => sum + count, 0);
@@ -162,6 +176,7 @@ export const InputForm: React.FC<InputFormProps> = ({
             onIncrement={() => handleIncrement(type)}
             onReset={() => handleReset(type)}
             onDecrement={() => handleDecrement(type)}
+            onRemovePlacedCase={onRemovePlacedCase ? () => onRemovePlacedCase(type) : undefined}
             placedCount={placedCounts?.[type] || 0}
           />
         ))}
@@ -194,6 +209,7 @@ export const InputForm: React.FC<InputFormProps> = ({
                 onIncrement={() => handleIncrement(type)}
                 onReset={() => handleReset(type)}
                 onDecrement={() => handleDecrement(type)}
+                onRemovePlacedCase={onRemovePlacedCase ? () => onRemovePlacedCase(type) : undefined}
                 placedCount={placedCounts?.[type] || 0}
               />
             ))}
