@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { CASES, CLICK_ANIMATION_DURATION } from '../constants';
 import type { CaseType } from '../types';
-import { PlusIcon, XIcon } from './Icons';
+import { PlusIcon, XIcon, HelpIcon } from './Icons';
+import { Tooltip } from './Tooltip';
 
 interface CaseCardProps {
   caseType: CaseType;
@@ -112,10 +113,33 @@ export const CaseCard: React.FC<CaseCardProps> = ({
       )}
 
       {/* Case title at top */}
-      <div className="text-center mb-2">
+      <div className="text-center mb-2 relative">
         <div className="font-medium text-gray-200 text-xs leading-tight line-clamp-2">
           {caseData.name}
         </div>
+        {!isActive && (
+          <div className="absolute top-0 right-0">
+            <Tooltip
+              content={
+                <div className="text-left">
+                  <div><strong>Click</strong> to add one case</div>
+                  <div><strong>Right-click</strong> to remove one case</div>
+                  <div><strong>Drag</strong> to manually place on stash grid</div>
+                </div>
+              }
+              position="right"
+            >
+              <button
+                type="button"
+                className="text-gray-500 hover:text-gray-400 transition-colors p-0.5"
+                aria-label="Help: Case card interactions"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <HelpIcon className="w-3 h-3" />
+              </button>
+            </Tooltip>
+          </div>
+        )}
       </div>
 
       {/* Case image or placeholder - main focus, fills most of card */}

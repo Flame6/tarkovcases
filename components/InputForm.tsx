@@ -162,7 +162,10 @@ export const InputForm: React.FC<InputFormProps> = ({
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
         <div>
             <h2 className="text-2xl font-bold text-white mb-2 uppercase tracking-wide">Configure Your Stash</h2>
-            <p className="text-gray-400">Hover to preview, click to add/edit. Active cards show a count and a reset (x) option.</p>
+            <p className="text-gray-400 mb-1">Click case cards to add them to your collection. Each click adds one case.</p>
+            <p className="text-sm text-gray-500">
+              <strong className="text-gray-400">Tip:</strong> Right-click to remove cases • Drag cards to manually place them • Click X on active cards to reset
+            </p>
         </div>
         <UsageCounter count={usageCount} />
       </div>

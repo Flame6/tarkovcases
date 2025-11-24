@@ -1,7 +1,8 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { CASES, GRID_WIDTH } from '../constants';
 import type { StashLayout, PlacedCase, CaseType, CaseCounts } from '../types';
-import { AlertTriangleIcon, CheckCircleIcon, ChevronLeftIcon, TrashIcon, XIcon } from './Icons';
+import { AlertTriangleIcon, CheckCircleIcon, ChevronLeftIcon, TrashIcon, XIcon, HelpIcon } from './Icons';
+import { Tooltip } from './Tooltip';
 
 interface StashGridDisplayProps {
   layout: StashLayout;
@@ -289,7 +290,28 @@ export const StashGridDisplay: React.FC<StashGridDisplayProps> = ({
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-200 uppercase tracking-wide">Optimized Stash Layout</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-2xl font-bold text-gray-200 uppercase tracking-wide">Optimized Stash Layout</h2>
+          <Tooltip
+            content={
+              <div className="text-left">
+                <div><strong>Drag cases</strong> from the left panel onto the grid to place them</div>
+                <div><strong>Drag placed cases</strong> to move them to a new position</div>
+                <div><strong>Right-click</strong> a placed case to remove it</div>
+                <div><strong>Drag to trash</strong> icon (top-right) to delete cases</div>
+              </div>
+            }
+            position="bottom"
+          >
+            <button
+              type="button"
+              className="text-gray-400 hover:text-gray-300 transition-colors p-1"
+              aria-label="Help: Stash grid interactions"
+            >
+              <HelpIcon className="w-5 h-5" />
+            </button>
+          </Tooltip>
+        </div>
         {onBack && (
           <button
             onClick={onBack}

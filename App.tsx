@@ -3,6 +3,9 @@ import { InputForm } from './components/InputForm';
 import { StashGridDisplay } from './components/StashGridDisplay';
 import { Header } from './components/Header';
 import { ActionButtons } from './components/ActionButtons';
+import { Instructions } from './components/Instructions';
+import { WelcomeModal } from './components/WelcomeModal';
+import { StashInstructions } from './components/StashInstructions';
 import { TarkovExclamationIcon } from './components/Icons';
 import { optimizeStashLayout } from './services/optimizer';
 import { incrementUsageCount, getUsageCount } from './services/usageCounter';
@@ -287,6 +290,12 @@ const App: React.FC = () => {
       <div className="container mx-auto px-4 py-8">
         <Header />
         
+        {/* Instructions Section */}
+        <Instructions defaultExpanded={false} />
+        
+        {/* Welcome Modal - handles its own visibility */}
+        <WelcomeModal onDismiss={() => {}} />
+        
         {/* Tarkov-Style Beta Warning Banner */}
         <div className="flex justify-center mt-6 mb-6">
           <aside 
@@ -399,9 +408,9 @@ const App: React.FC = () => {
           <section id="stash-layout" className="w-full lg:w-1/2 px-4" aria-label="Stash layout preview">
             <h2 className="sr-only">Stash Layout Preview</h2>
             <div ref={stashLayoutRef} className="bg-[#2D2D2D]/80 backdrop-blur-sm p-6 sm:p-8 shadow-2xl border border-white/20 h-full">
-              {currentLayout ? (
+              {manuallyPlacedCases.length > 0 ? (
                 <StashGridDisplay
-                  layout={currentLayout}
+                  layout={currentLayout!}
                   caseCounts={caseCounts}
                   onCasePlaced={handleCasePlaced}
                   onCaseRemoved={handleCaseRemoved}
@@ -409,9 +418,7 @@ const App: React.FC = () => {
                   isLoading={isLoading}
                 />
               ) : (
-                <div className="text-center text-gray-400 py-8">
-                  <p>Drag cases from the left to place them in your stash, or submit your case counts to auto-optimize.</p>
-                </div>
+                <StashInstructions totalCases={totalCases} />
               )}
             </div>
           </section>
