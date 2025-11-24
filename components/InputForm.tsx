@@ -3,7 +3,7 @@ import { CASE_TYPES, DEFAULT_STASH_EDITION } from '../constants';
 import type { CaseCounts, StashEdition, CaseType } from '../types';
 import { getUsageCount, incrementUsageCount } from '../services/usageCounter';
 import { UsageCounter } from './UsageCounter';
-import { LoaderIcon } from './Icons';
+import { LoaderIcon, ChevronDownIcon, ChevronUpIcon } from './Icons';
 import { CaseCard } from './CaseCard';
 
 interface InputFormProps {
@@ -66,6 +66,11 @@ export const InputForm: React.FC<InputFormProps> = ({
   const caseCounts = externalCaseCounts ?? internalCaseCounts;
   const setCaseCounts = onCaseCountsChange ?? setInternalCaseCounts;
   const [usageCount, setUsageCount] = useState<number>(0);
+  const [showCustomBoxes, setShowCustomBoxes] = useState<boolean>(false);
+  
+  // Separate regular cases from custom boxes
+  const regularCases = CASE_TYPES.filter(type => !type.startsWith('custom_'));
+  const customBoxes = CASE_TYPES.filter(type => type.startsWith('custom_'));
 
   useEffect(() => {
     // Load global usage count on mount
@@ -133,7 +138,7 @@ export const InputForm: React.FC<InputFormProps> = ({
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {CASE_TYPES.map(type => (
+        {regularCases.map(type => (
           <CaseCard
             key={type}
             caseType={type}
@@ -144,6 +149,40 @@ export const InputForm: React.FC<InputFormProps> = ({
             placedCount={placedCounts?.[type] || 0}
           />
         ))}
+      </div>
+      
+      {/* Custom Boxes Section */}
+      <div className="mt-6 pt-6 border-t border-white/20">
+        <button
+          type="button"
+          onClick={() => setShowCustomBoxes(!showCustomBoxes)}
+          className="w-full flex items-center justify-between px-4 py-3 bg-[#1a1a1a]/50 hover:bg-[#2a2a2a]/50 border border-white/20 hover:border-white/30 rounded-lg transition-colors"
+        >
+          <span className="text-white font-medium uppercase tracking-wider">
+            Custom Boxes / Rigs
+          </span>
+          {showCustomBoxes ? (
+            <ChevronUpIcon className="w-5 h-5 text-gray-400" />
+          ) : (
+            <ChevronDownIcon className="w-5 h-5 text-gray-400" />
+          )}
+        </button>
+        
+        {showCustomBoxes && (
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {customBoxes.map(type => (
+              <CaseCard
+                key={type}
+                caseType={type}
+                count={caseCounts[type] || 0}
+                onIncrement={() => handleIncrement(type)}
+                onReset={() => handleReset(type)}
+                onDecrement={onDecrement ? () => onDecrement(type) : undefined}
+                placedCount={placedCounts?.[type] || 0}
+              />
+            ))}
+          </div>
+        )}
       </div>
       
       <div className="mt-8 pt-6 border-t border-white/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

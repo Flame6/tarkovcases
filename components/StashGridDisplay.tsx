@@ -422,11 +422,24 @@ export const StashGridDisplay: React.FC<StashGridDisplayProps> = ({
                 }}
                 onContextMenu={(e: React.MouseEvent) => handleContextMenu(item.id, e)}
               >
-                <img
-                  src={item.rotated ? CASES[item.type].rotatedImage : CASES[item.type].image}
-                  alt={CASES[item.type].name}
-                  className="w-full h-full object-cover"
-                />
+                {CASES[item.type].image ? (
+                  <img
+                    src={item.rotated ? CASES[item.type].rotatedImage : CASES[item.type].image}
+                    alt={CASES[item.type].name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-black/40 border border-gray-600">
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-gray-300">
+                        {item.width}×{item.height}
+                      </div>
+                      <div className="text-xs text-gray-400 uppercase">
+                        Custom
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 {/* Delete button */}
                 <button
@@ -448,7 +461,13 @@ export const StashGridDisplay: React.FC<StashGridDisplayProps> = ({
           <div className="flex flex-wrap gap-3">
             {unplacedCases.map((item: { type: CaseType }, index: number) => (
               <div key={index} className="flex items-center gap-2 p-2 bg-[#1a1a1a] border border-white/30">
-                <img src={CASES[item.type].image} alt={CASES[item.type].name} className="w-8 h-8 object-contain bg-black/40" />
+                {CASES[item.type].image ? (
+                  <img src={CASES[item.type].image} alt={CASES[item.type].name} className="w-8 h-8 object-contain bg-black/40" />
+                ) : (
+                  <div className="w-8 h-8 flex items-center justify-center bg-black/40 border border-gray-600">
+                    <span className="text-xs font-bold text-gray-300">{CASES[item.type].width}×{CASES[item.type].height}</span>
+                  </div>
+                )}
                 <span className="text-sm text-gray-300 font-medium">{CASES[item.type].name}</span>
               </div>
             ))}

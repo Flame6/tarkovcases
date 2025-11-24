@@ -19,7 +19,8 @@ export const STASH_DIMENSIONS = {
 
 export const CASE_TYPES = [
   "items", "THICCItems", "weapons", "thiicweapons", "food", "medicine", "grenades", "mags", "money",
-  "ammo", "pistol", "toolbox", "junk", "docs", "sicc", "plates", "Key_case", "cards", "keytool", "stims", "tags", "wallet", "twitch"
+  "ammo", "pistol", "toolbox", "junk", "docs", "sicc", "plates", "Key_case", "cards", "keytool", "stims", "tags", "wallet", "twitch",
+  "custom_1x1", "custom_2x1", "custom_1x2", "custom_2x2", "custom_2x3", "custom_3x2", "custom_3x3", "custom_3x4", "custom_4x3", "custom_4x4"
 ] as const;
 
 // Helper to generate conventional image paths
@@ -50,4 +51,14 @@ export const CASES: CaseDefinitions = {
   tags:        { name: "Dogtag Case", width: 1, height: 1, color: "bg-red-500", image: img('tags', 'webp'), rotatedImage: img_r('tags', 'webp') },
   wallet:      { name: "WZ Wallet", width: 1, height: 1, color: "bg-green-500", image: img('wallet', 'webp'), rotatedImage: img_r('wallet', 'webp') },
   twitch:      { name: "Twitch Rivals Bag", width: 3, height: 3, color: "bg-purple-600", image: img('Twitch', 'webp'), rotatedImage: img_r('Twitch', 'webp') },
+  custom_1x1:  { name: "Custom 1x1", width: 1, height: 1, color: "bg-gray-800", image: "", rotatedImage: "" },
+  custom_2x1:  { name: "Custom 2x1", width: 2, height: 1, color: "bg-gray-800", image: "", rotatedImage: "" },
+  custom_1x2:  { name: "Custom 1x2", width: 1, height: 2, color: "bg-gray-800", image: "", rotatedImage: "" },
+  custom_2x2:  { name: "Custom 2x2", width: 2, height: 2, color: "bg-gray-800", image: "", rotatedImage: "" },
+  custom_2x3:  { name: "Custom 2x3", width: 2, height: 3, color: "bg-gray-800", image: "", rotatedImage: "" },
+  custom_3x2:  { name: "Custom 3x2", width: 3, height: 2, color: "bg-gray-800", image: "", rotatedImage: "" },
+  custom_3x3:  { name: "Custom 3x3", width: 3, height: 3, color: "bg-gray-800", image: "", rotatedImage: "" },
+  custom_3x4:  { name: "Custom 3x4", width: 3, height: 4, color: "bg-gray-800", image: "", rotatedImage: "" },
+  custom_4x3:  { name: "Custom 4x3", width: 4, height: 3, color: "bg-gray-800", image: "", rotatedImage: "" },
+  custom_4x4:  { name: "Custom 4x4", width: 4, height: 4, color: "bg-gray-800", image: "", rotatedImage: "" },
 };

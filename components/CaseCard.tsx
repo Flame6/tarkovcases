@@ -111,13 +111,26 @@ export const CaseCard: React.FC<CaseCardProps> = ({
         </div>
       </div>
 
-      {/* Case image - main focus, fills most of card */}
+      {/* Case image or placeholder - main focus, fills most of card */}
       <div className="flex-1 flex items-center justify-center mb-2 min-h-0">
-        <img 
-          src={caseData.image} 
-          alt={caseData.name}
-          className="max-w-full max-h-full object-contain bg-black/30 p-2 border border-gray-700"
-        />
+        {caseData.image ? (
+          <img 
+            src={caseData.image} 
+            alt={caseData.name}
+            className="max-w-full max-h-full object-contain bg-black/30 p-2 border border-gray-700"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-black/30 border border-gray-700 p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-400 mb-1">
+                {caseData.width}×{caseData.height}
+              </div>
+              <div className="text-xs text-gray-500 uppercase tracking-wider">
+                Custom Box
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Count and info at bottom */}
