@@ -83,6 +83,78 @@ export function optimizeStashLayout(
   
   const remainingCases = [...allCases];
   
+  // Helper function to calculate how much contiguous space is available from a position
+  function getAvailableSpace(x: number, y: number): { width: number; height: number } {
+    let maxWidth = 0;
+    let maxHeight = 0;
+    
+    // Find max width (contiguous empty cells to the right)
+    for (let x_check = x; x_check < GRID_WIDTH; x_check++) {
+      if (grid[y][x_check] !== null) break;
+      maxWidth++;
+    }
+    
+    // Find max height (contiguous empty rows below)
+    for (let y_check = y; y_check < stashHeight; y_check++) {
+      if (grid[y_check][x] !== null) break;
+      maxHeight++;
+    }
+    
+    // Find actual rectangular area available
+    let actualWidth = maxWidth;
+    let actualHeight = maxHeight;
+    
+    for (let y_check = y; y_check < y + maxHeight && y_check < stashHeight; y_check++) {
+      let rowWidth = 0;
+      for (let x_check = x; x_check < x + maxWidth && x_check < GRID_WIDTH; x_check++) {
+        if (grid[y_check][x_check] !== null) break;
+        rowWidth++;
+      }
+      actualWidth = Math.min(actualWidth, rowWidth);
+    }
+    
+    return { width: actualWidth, height: actualHeight };
+  }
+  
+  // Helper function to score a placement based on efficiency
+  function scorePlacement(
+    caseWidth: number, 
+    caseHeight: number, 
+    availableWidth: number, 
+    availableHeight: number
+  ): number {
+    const caseArea = caseWidth * caseHeight;
+    const availableArea = availableWidth * availableHeight;
+    const waste = availableArea - caseArea;
+    
+    // Prefer placements that:
+    // 1. Fill rows completely (width matches available width) - high bonus
+    // 2. Use more space (larger cases) - medium bonus
+    // 3. Minimize waste - low penalty
+    
+    let score = caseArea * 1000; // Base score: prefer larger cases
+    
+    // Bonus for filling width completely
+    if (caseWidth === availableWidth) {
+      score += 5000;
+    }
+    
+    // Bonus for filling height completely
+    if (caseHeight === availableHeight) {
+      score += 3000;
+    }
+    
+    // Penalty for waste (but not too harsh - we want to place things)
+    score -= waste * 10;
+    
+    // Prefer cases that are closer to filling the available space
+    const widthFit = caseWidth / availableWidth;
+    const heightFit = caseHeight / availableHeight;
+    score += (widthFit + heightFit) * 1000;
+    
+    return score;
+  }
+  
   // 3. Iterate through the stash grid from top-to-bottom, left-to-right.
   for (let y = 0; y < stashHeight; y++) {
     for (let x = 0; x < GRID_WIDTH; x++) {
@@ -91,8 +163,15 @@ export function optimizeStashLayout(
         continue;
       }
 
-      // 5. Find the FIRST case in our sorted list that can fit in this empty spot.
-      let placedSomething = false;
+      // 5. Find the BEST case that can fit in this empty spot.
+      // Evaluate all possible placements and choose the one with the best score.
+      const availableSpace = getAvailableSpace(x, y);
+      let bestPlacement: {
+        caseIndex: number;
+        orientation: { width: number; height: number; rotated: boolean };
+        score: number;
+      } | null = null;
+
       for (let i = 0; i < remainingCases.length; i++) {
         const caseToTry = remainingCases[i];
         
@@ -111,8 +190,11 @@ export function optimizeStashLayout(
         }
 
         for (const orient of orientations) {
-            // Check if the case fits within the grid boundaries.
-            if (x + orient.width <= GRID_WIDTH && y + orient.height <= stashHeight) {
+            // Check if the case fits within the grid boundaries and available space.
+            if (orient.width <= availableSpace.width && 
+                orient.height <= availableSpace.height &&
+                x + orient.width <= GRID_WIDTH && 
+                y + orient.height <= stashHeight) {
                 // Check for collisions with already placed items.
                 let hasCollision = false;
                 for (let y_check = y; y_check < y + orient.height; y_check++) {
@@ -126,36 +208,51 @@ export function optimizeStashLayout(
                 }
 
                 if (!hasCollision) {
-                    // This is the first valid placement we've found. Place it immediately.
-                    const placedItem: PlacedCase = {
-                        id: caseToTry.id,
-                        type: caseToTry.type,
-                        x, y,
-                        width: orient.width,
-                        height: orient.height,
-                        rotated: orient.rotated
-                    };
-                    placedCases.push(placedItem);
-
-                    // Mark the grid cells as occupied.
-                    for (let y_fill = y; y_fill < y + orient.height; y_fill++) {
-                        for (let x_fill = x; x_fill < x + orient.width; x_fill++) {
-                            grid[y_fill][x_fill] = caseToTry.id;
-                        }
-                    }
-
-                    // Remove the placed case from the available pool.
-                    remainingCases.splice(i, 1);
+                    // Score this placement
+                    const score = scorePlacement(
+                        orient.width, 
+                        orient.height, 
+                        availableSpace.width, 
+                        availableSpace.height
+                    );
                     
-                    placedSomething = true;
-                    break; // Exit the orientation loop.
+                    // Keep track of the best placement so far
+                    if (!bestPlacement || score > bestPlacement.score) {
+                        bestPlacement = {
+                            caseIndex: i,
+                            orientation: orient,
+                            score: score
+                        };
+                    }
                 }
             }
         }
+      }
+      
+      // If we found a valid placement, place it
+      if (bestPlacement) {
+        const caseToPlace = remainingCases[bestPlacement.caseIndex];
+        const orient = bestPlacement.orientation;
         
-        if (placedSomething) {
-            break; // Exit the case-finding loop and move to the next grid cell.
+        const placedItem: PlacedCase = {
+            id: caseToPlace.id,
+            type: caseToPlace.type,
+            x, y,
+            width: orient.width,
+            height: orient.height,
+            rotated: orient.rotated
+        };
+        placedCases.push(placedItem);
+
+        // Mark the grid cells as occupied.
+        for (let y_fill = y; y_fill < y + orient.height; y_fill++) {
+            for (let x_fill = x; x_fill < x + orient.width; x_fill++) {
+                grid[y_fill][x_fill] = caseToPlace.id;
+            }
         }
+
+        // Remove the placed case from the available pool.
+        remainingCases.splice(bestPlacement.caseIndex, 1);
       }
     }
   }
