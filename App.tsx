@@ -4,7 +4,7 @@ import { StashGridDisplay } from './components/StashGridDisplay';
 import { Header } from './components/Header';
 import { ActionButtons } from './components/ActionButtons';
 import { Instructions } from './components/Instructions';
-import { WelcomeModal } from './components/WelcomeModal';
+import { Tutorial } from './components/Tutorial';
 import { StashInstructions } from './components/StashInstructions';
 import { TarkovExclamationIcon } from './components/Icons';
 import { optimizeStashLayout } from './services/optimizer';
@@ -38,6 +38,8 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const stashHeight = STASH_DIMENSIONS[DEFAULT_STASH_EDITION].height;
   const stashLayoutRef = useRef<HTMLDivElement>(null);
+  const caseInputFormRef = useRef<HTMLElement>(null);
+  const optimizeButtonRef = useRef<HTMLButtonElement>(null);
   const caseCountsRef = useRef<CaseCounts>(caseCounts);
   
   // Keep ref in sync with state
@@ -106,16 +108,17 @@ const App: React.FC = () => {
     setIsLoading(true);
     await incrementUsageCount();
     await getUsageCount(true); // Refresh counter
-    setCaseCounts(newCaseCounts);
     // Clear all manually placed cases (soft reset)
     setManuallyPlacedCases([]);
+    // Clear remaining counts since we're optimizing all from scratch
+    setCaseCounts({} as CaseCounts);
     setTimeout(() => {
       const height = STASH_DIMENSIONS[edition].height;
       // Optimize everything from scratch with no locked positions
+      // newCaseCounts is already the total owned (remaining + placed), but we cleared placed, so it's just the owned counts
       const layout = optimizeStashLayout(newCaseCounts, height, []);
       setManuallyPlacedCases(layout.placedCases);
-      // All cases are placed, so remaining is empty
-      setCaseCounts({} as CaseCounts);
+      // All cases are placed, so remaining is empty (already set above)
       setIsLoading(false);
       // Scroll to stash layout section
       setTimeout(() => {
@@ -293,8 +296,12 @@ const App: React.FC = () => {
         {/* Instructions Section */}
         <Instructions defaultExpanded={false} />
         
-        {/* Welcome Modal - handles its own visibility */}
-        <WelcomeModal onDismiss={() => {}} />
+        {/* Tutorial - handles its own visibility */}
+        <Tutorial
+          caseInputFormRef={caseInputFormRef}
+          optimizeButtonRef={optimizeButtonRef}
+          stashLayoutRef={stashLayoutRef}
+        />
         
         {/* Tarkov-Style Beta Warning Banner */}
         <div className="flex justify-center mt-6 mb-6">
@@ -362,6 +369,7 @@ const App: React.FC = () => {
         {/* Action Buttons - Prominently displayed below warning */}
         <section id="optimization-actions" aria-label="Optimization actions" className="sticky top-0 z-50 -mx-4 px-4">
           <ActionButtons
+            ref={optimizeButtonRef}
             onOptimize={handleOptimize}
             onOptimizeAll={handleOptimizeAll}
             isLoading={isLoading}
@@ -371,24 +379,16 @@ const App: React.FC = () => {
         </section>
 
         <main id="main-content" className="mt-8 flex flex-wrap -mx-4" role="main">
-          <section id="case-input-form" className="w-full lg:w-1/2 px-4 mb-8 lg:mb-0" aria-label="Case input form">
+          <section id="case-input-form" ref={caseInputFormRef} className="w-full lg:w-1/2 px-4 mb-8 lg:mb-0" aria-label="Case input form">
             <h2 className="sr-only">Case Input Form</h2>
             <div className="bg-[#2D2D2D]/80 backdrop-blur-sm p-6 sm:p-8 shadow-2xl border border-white/20 h-full">
               <InputForm 
                 onOptimize={handleOptimize}
                 onOptimizeAll={handleOptimizeAll}
                 isLoading={isLoading}
-                caseCounts={totalOwnedCaseCounts}
-                onCaseCountsChange={(newTotalOwned) => {
-                  // When user changes counts in form, update remaining counts
-                  // newTotalOwned = remaining + placed, so remaining = newTotalOwned - placed
-                  const newRemaining: CaseCounts = {} as CaseCounts;
-                  Object.keys(newTotalOwned).forEach((type) => {
-                    const key = type as keyof CaseCounts;
-                    const total = newTotalOwned[key] || 0;
-                    const placed = placedCounts[key] || 0;
-                    newRemaining[key] = Math.max(0, total - placed);
-                  });
+                caseCounts={caseCounts}
+                onCaseCountsChange={(newRemaining) => {
+                  // InputForm now works with remaining counts directly
                   setCaseCounts(newRemaining);
                 }}
                 onDecrement={handleCaseDecrement}

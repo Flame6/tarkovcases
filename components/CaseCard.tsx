@@ -94,7 +94,7 @@ export const CaseCard: React.FC<CaseCardProps> = ({
 
   return (
     <div
-      className={`case-card relative p-3 border flex flex-col transition-all duration-300 h-[180px] ${
+      className={`case-card relative p-2 border flex flex-col transition-all duration-300 h-[180px] ${
         isActive
           ? 'bg-[#1a1a1a] border-white/20 cursor-grab active:cursor-grabbing case-card-active'
           : 'bg-[#0f0f0f] border-white/15 cursor-pointer case-card-inactive'
@@ -113,8 +113,8 @@ export const CaseCard: React.FC<CaseCardProps> = ({
       )}
 
       {/* Case title at top */}
-      <div className="text-center mb-2 relative">
-        <div className="font-medium text-gray-200 text-xs leading-tight line-clamp-2">
+      <div className="text-center mb-1 relative">
+        <div className="font-medium text-gray-200 text-sm leading-tight line-clamp-2">
           {caseData.name}
         </div>
         {!isActive && (
@@ -143,7 +143,7 @@ export const CaseCard: React.FC<CaseCardProps> = ({
       </div>
 
       {/* Case image or placeholder - main focus, fills most of card */}
-      <div className="flex-1 flex items-center justify-center mb-2 min-h-0">
+      <div className="flex-1 flex items-center justify-center mb-1 min-h-0">
         {caseData.image ? (
           <img 
             src={caseData.image} 
@@ -151,7 +151,7 @@ export const CaseCard: React.FC<CaseCardProps> = ({
             loading="lazy"
             decoding="async"
             fetchpriority={isActive && owned <= 3 ? "high" : "auto"}
-            className="max-w-full max-h-full object-contain bg-black/30 p-2 border border-gray-700"
+            className="max-w-full max-h-full object-contain"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-black/30 border border-gray-700 p-4">
@@ -172,9 +172,8 @@ export const CaseCard: React.FC<CaseCardProps> = ({
         {isActive ? (
           <>
             <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400">Owned:</span>
-                <span className="text-sm font-bold text-white">{owned}</span>
+              <div className="text-xs text-gray-400">
+                Owned: <span className="text-white font-semibold">{owned}</span>
               </div>
               <button
                 className="reset-button flex items-center justify-center w-6 h-6 rounded bg-[#2a2a2a] hover:bg-[#3a3a3a] text-gray-300 hover:text-white transition-colors border border-white/20 hover:border-white/40"
@@ -184,19 +183,13 @@ export const CaseCard: React.FC<CaseCardProps> = ({
                 <XIcon className="w-4 h-4" />
               </button>
             </div>
-            <div className="text-xs text-gray-400 space-y-0.5">
-              <div>Placed: <span className="text-gray-300 font-medium">{placedCount}</span></div>
-              <div>Remaining: <span className="text-gray-300 font-medium">{remaining}</span></div>
+            <div className="text-xs text-gray-400">
+              Placed <span className="text-gray-300 font-medium">{placedCount}</span> / <span className="text-gray-300 font-medium">{owned}</span> Total
             </div>
           </>
         ) : (
           <div className="text-xs text-gray-500 text-center case-card-hint">
             Click to add | Right-click to remove
-          </div>
-        )}
-        {isActive && placedCount > 0 && (
-          <div className="text-xs text-gray-500 text-center mt-1">
-            Right-click to remove placed case
           </div>
         )}
       </div>

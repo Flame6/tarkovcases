@@ -103,30 +103,32 @@ export const InputForm: React.FC<InputFormProps> = ({
   }, [caseCounts]);
 
   const handleIncrement = (caseType: CaseType) => {
-    // Calculate new total owned (current + 1)
-    const currentTotal = caseCounts[caseType] || 0;
-    const newTotalOwned = {
+    // Increment remaining count
+    const currentRemaining = caseCounts[caseType] || 0;
+    const newRemaining = {
       ...caseCounts,
-      [caseType]: currentTotal + 1,
+      [caseType]: currentRemaining + 1,
     };
-    setCaseCounts(newTotalOwned);
+    setCaseCounts(newRemaining);
   };
 
   const handleReset = (caseType: CaseType) => {
-    const newTotalOwned = {
+    // Reset remaining count to 0
+    const newRemaining = {
       ...caseCounts,
       [caseType]: 0,
     };
-    setCaseCounts(newTotalOwned);
+    setCaseCounts(newRemaining);
   };
 
   const handleDecrement = (caseType: CaseType) => {
-    const currentTotal = caseCounts[caseType] || 0;
-    const newTotalOwned = {
+    // Decrement remaining count
+    const currentRemaining = caseCounts[caseType] || 0;
+    const newRemaining = {
       ...caseCounts,
-      [caseType]: Math.max(0, currentTotal - 1),
+      [caseType]: Math.max(0, currentRemaining - 1),
     };
-    setCaseCounts(newTotalOwned);
+    setCaseCounts(newRemaining);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -134,7 +136,15 @@ export const InputForm: React.FC<InputFormProps> = ({
     await incrementUsageCount();
     const latestCount = await getUsageCount(true);
     setUsageCount(latestCount);
-    onOptimize(caseCounts, DEFAULT_STASH_EDITION);
+    // Calculate total owned (remaining + placed) for optimize
+    const totalOwned: CaseCounts = { ...caseCounts };
+    if (placedCounts) {
+      Object.keys(placedCounts).forEach((type) => {
+        const key = type as keyof CaseCounts;
+        totalOwned[key] = (totalOwned[key] || 0) + (placedCounts[key] || 0);
+      });
+    }
+    onOptimize(totalOwned, DEFAULT_STASH_EDITION);
   };
 
   const handleOptimizeAll = async (e: React.MouseEvent) => {
@@ -143,7 +153,15 @@ export const InputForm: React.FC<InputFormProps> = ({
     await incrementUsageCount();
     const latestCount = await getUsageCount(true);
     setUsageCount(latestCount);
-    onOptimizeAll(caseCounts, DEFAULT_STASH_EDITION);
+    // Calculate total owned (remaining + placed) for optimize all
+    const totalOwned: CaseCounts = { ...caseCounts };
+    if (placedCounts) {
+      Object.keys(placedCounts).forEach((type) => {
+        const key = type as keyof CaseCounts;
+        totalOwned[key] = (totalOwned[key] || 0) + (placedCounts[key] || 0);
+      });
+    }
+    onOptimizeAll(totalOwned, DEFAULT_STASH_EDITION);
   };
 
   const handleClear = () => {
@@ -170,7 +188,7 @@ export const InputForm: React.FC<InputFormProps> = ({
         <UsageCounter count={usageCount} />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
         {regularCases.map(type => (
           <CaseCard
             key={type}
@@ -203,7 +221,7 @@ export const InputForm: React.FC<InputFormProps> = ({
         </button>
         
         {showCustomBoxes && (
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
             {customBoxes.map(type => (
               <CaseCard
                 key={type}

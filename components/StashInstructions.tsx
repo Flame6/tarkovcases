@@ -51,7 +51,7 @@ export const StashInstructions: React.FC<StashInstructionsProps> = ({ totalCases
                 </ol>
               </div>
               <div className="bg-amber-900/20 border border-amber-700/30 p-3 rounded text-sm text-amber-200 mt-4">
-                <strong>Tip:</strong> You can also drag cases from the left panel onto the grid to manually place them before optimizing.
+                <strong>Tip:</strong> You can also drag cases from the left panel onto the grid to manually place them before optimizing. <span className="text-amber-300 italic">Note: Manual placement is currently buggy and under development.</span>
               </div>
             </div>
           )}

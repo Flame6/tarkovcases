@@ -18,9 +18,8 @@ export const STASH_DIMENSIONS = {
 };
 
 export const CASE_TYPES = [
-  "items", "THICCItems", "weapons", "thiicweapons", "food", "medicine", "grenades", "mags", "money",
-  "ammo", "pistol", "toolbox", "junk", "docs", "sicc", "plates", "Key_case", "cards", "keytool", "stims", "tags", "wallet", "twitch",
-  "custom_1x1", "custom_2x1", "custom_1x2", "custom_2x2", "custom_2x3", "custom_3x2", "custom_3x3", "custom_3x4", "custom_4x3", "custom_4x4"
+  "ammo", "cards", "docs", "food", "grenades", "items", "junk", "Key_case", "keytool", "mags", "medicine", "money", "pistol", "plates", "sicc", "stims", "tags", "THICCItems", "thiicweapons", "toolbox", "twitch", "wallet", "weapons",
+  "custom_1x1", "custom_1x2", "custom_2x1", "custom_2x2", "custom_2x3", "custom_3x2", "custom_3x3", "custom_3x4", "custom_4x3", "custom_4x4"
 ] as const;
 
 // Helper to generate conventional image paths

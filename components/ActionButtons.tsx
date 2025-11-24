@@ -12,13 +12,13 @@ interface ActionButtonsProps {
   totalCases: number;
 }
 
-export const ActionButtons: React.FC<ActionButtonsProps> = ({
+export const ActionButtons = React.forwardRef<HTMLButtonElement, ActionButtonsProps>(({
   onOptimize,
   onOptimizeAll,
   isLoading,
   caseCounts,
   totalCases,
-}) => {
+}, ref) => {
   const handleOptimize = async (e: React.MouseEvent) => {
     e.preventDefault();
     onOptimize(caseCounts, DEFAULT_STASH_EDITION);
@@ -36,6 +36,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         {onOptimizeAll && (
           <div className="flex items-center gap-2">
             <button
+              ref={ref}
               type="button"
               onClick={handleOptimizeAll}
               disabled={isLoading || totalCases === 0}
@@ -104,5 +105,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
       </div>
     </div>
   );
-};
+});
+
+ActionButtons.displayName = 'ActionButtons';
 
