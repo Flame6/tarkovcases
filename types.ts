@@ -2,6 +2,8 @@ import { CASE_TYPES } from './constants';
 
 export type CaseType = typeof CASE_TYPES[number];
 
+export type OptimizationMethod = 'greedy' | 'genetic';
+
 export type StashEdition = 'Standard' | 'Left Behind' | 'Prepare for Escape' | 'Edge of Darkness';
 
 export interface CaseDefinition {

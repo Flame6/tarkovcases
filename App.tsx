@@ -9,8 +9,16 @@ import { StashInstructions } from './components/StashInstructions';
 import { TarkovExclamationIcon } from './components/Icons';
 import { optimizeStashLayout } from './services/optimizer';
 import { incrementUsageCount, getUsageCount } from './services/usageCounter';
-import type { CaseCounts, StashLayout, StashEdition, PlacedCase, CaseType } from './types';
-import { STASH_DIMENSIONS, GRID_WIDTH, OPTIMIZATION_DELAY, SCROLL_DELAY, DEFAULT_STASH_EDITION, CASE_TYPES } from './constants';
+import type { CaseCounts, StashLayout, StashEdition, PlacedCase, CaseType, OptimizationMethod } from './types';
+import { STASH_DIMENSIONS, GRID_WIDTH, OPTIMIZATION_DELAY, SCROLL_DELAY, DEFAULT_STASH_EDITION, CASE_TYPES, DEFAULT_OPTIMIZATION_METHOD } from './constants';
+
+// Helper function to ensure all case types are present in CaseCounts
+const ensureAllCaseTypes = (counts: CaseCounts): CaseCounts => {
+  const initialCounts = Object.fromEntries(
+    CASE_TYPES.map(type => [type, 0])
+  ) as CaseCounts;
+  return { ...initialCounts, ...counts };
+};
 
 const App: React.FC = () => {
   const [caseCounts, setCaseCounts] = useState<CaseCounts>(() => {
@@ -34,18 +42,72 @@ const App: React.FC = () => {
     }
     return initialCounts;
   });
-  const [manuallyPlacedCases, setManuallyPlacedCases] = useState<PlacedCase[]>([]);
+  const [manuallyPlacedCases, setManuallyPlacedCases] = useState<PlacedCase[]>(() => {
+    // Load manually placed cases from localStorage
+    try {
+      const stored = localStorage.getItem('tarkovStashOptimizerPlacedCases');
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (error) {
+      console.error('Could not load placed cases', error);
+    }
+    return [];
+  });
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [optimizationMethod, setOptimizationMethod] = useState<OptimizationMethod>(() => {
+    // Load optimization method from localStorage or use default
+    try {
+      const stored = localStorage.getItem('tarkovStashOptimizerSettings');
+      if (stored) {
+        const data = JSON.parse(stored);
+        if (data.optimizationMethod) {
+          // Migrate removed methods to greedy
+          if (data.optimizationMethod === 'simulated-annealing' || data.optimizationMethod === 'first-fit' || data.optimizationMethod === 'best-fit') {
+            data.optimizationMethod = 'greedy';
+            localStorage.setItem('tarkovStashOptimizerSettings', JSON.stringify(data));
+            return 'greedy';
+          }
+          return data.optimizationMethod;
+        }
+      }
+    } catch (error) {
+      console.error('Could not load optimization method', error);
+    }
+    return DEFAULT_OPTIMIZATION_METHOD;
+  });
   const stashHeight = STASH_DIMENSIONS[DEFAULT_STASH_EDITION].height;
   const stashLayoutRef = useRef<HTMLDivElement>(null);
   const caseInputFormRef = useRef<HTMLElement>(null);
   const optimizeButtonRef = useRef<HTMLButtonElement>(null);
+  const betaBannerRef = useRef<HTMLElement>(null);
   const caseCountsRef = useRef<CaseCounts>(caseCounts);
+  const isInitialMount = useRef(true);
+  const shouldAutoOptimizeRef = useRef(false);
+  const isOptimizingRef = useRef(false);
+  const prevCaseCountsRef = useRef<CaseCounts>(caseCounts);
+  const prevOptimizationMethodRef = useRef<OptimizationMethod>(optimizationMethod);
   
   // Keep ref in sync with state
   useEffect(() => {
     caseCountsRef.current = caseCounts;
   }, [caseCounts]);
+
+  // Save manually placed cases to localStorage whenever they change
+  useEffect(() => {
+    if (!isInitialMount.current) {
+      try {
+        localStorage.setItem('tarkovStashOptimizerPlacedCases', JSON.stringify(manuallyPlacedCases));
+      } catch (error) {
+        console.error('Could not save placed cases', error);
+      }
+    }
+  }, [manuallyPlacedCases]);
+
+  // Mark initial mount as complete after first render
+  useEffect(() => {
+    isInitialMount.current = false;
+  }, []);
 
   // Calculate placed counts for display - recalculate when manuallyPlacedCases changes
   const placedCounts: CaseCounts = useMemo(() => {
@@ -56,6 +118,93 @@ const App: React.FC = () => {
     });
     return counts;
   }, [manuallyPlacedCases]);
+
+  const handleOptimizationMethodChange = useCallback((method: OptimizationMethod) => {
+    setOptimizationMethod(method);
+    // Save to localStorage
+    try {
+      const stored = localStorage.getItem('tarkovStashOptimizerSettings');
+      const settings = stored ? JSON.parse(stored) : {};
+      settings.optimizationMethod = method;
+      localStorage.setItem('tarkovStashOptimizerSettings', JSON.stringify(settings));
+    } catch (error) {
+      console.error('Could not save optimization method', error);
+    }
+    // Trigger auto-rerun if there are placed cases
+    shouldAutoOptimizeRef.current = true;
+  }, []);
+
+  // Helper function to trigger auto-optimization
+  const triggerAutoOptimize = useCallback(() => {
+    if (isInitialMount.current) return;
+    if (isOptimizingRef.current) return;
+    if (manuallyPlacedCases.length === 0) return;
+    
+    isOptimizingRef.current = true;
+    setIsLoading(true);
+    
+    setTimeout(() => {
+      setManuallyPlacedCases((currentManuallyPlaced) => {
+        const height = STASH_DIMENSIONS[DEFAULT_STASH_EDITION].height;
+        const currentMethod = prevOptimizationMethodRef.current;
+        
+        // Calculate total owned counts: current remaining + all placed cases
+        // Start with current caseCounts (remaining) - use ref to get latest, ensure all types
+        const currentCounts = ensureAllCaseTypes(caseCountsRef.current);
+        const totalOwned: CaseCounts = { ...currentCounts };
+        
+        // Add all placed cases to total owned
+        currentManuallyPlaced.forEach((placed: PlacedCase) => {
+          const type = placed.type as keyof CaseCounts;
+          totalOwned[type] = (totalOwned[type] || 0) + 1;
+        });
+        
+        // Calculate remaining counts: total owned - manually placed cases
+        const remainingCounts: CaseCounts = { ...totalOwned };
+        currentManuallyPlaced.forEach((placed: PlacedCase) => {
+          const type = placed.type as keyof CaseCounts;
+          remainingCounts[type] = Math.max(0, (remainingCounts[type] || 0) - 1);
+        });
+        
+        // Separate locked (manually placed) from unlocked (auto-placed) cases
+        const lockedCases = currentManuallyPlaced.filter(c => c.isLocked);
+        
+        // Pass only locked cases as constraints (auto-placed cases will be re-optimized)
+        const layout = optimizeStashLayout(remainingCounts, height, lockedCases, currentMethod);
+        
+        // Filter out locked cases from optimizer output (they're already locked)
+        const lockedIds = new Set(lockedCases.map((c: PlacedCase) => c.id));
+        const autoFilledCases = layout.placedCases.filter((c: PlacedCase) => !lockedIds.has(c.id));
+        
+        // Merge locked (manual) cases with auto-filled cases
+        const allPlaced = [...lockedCases, ...autoFilledCases];
+        
+        // Update caseCounts to reflect remaining (unplaced) cases
+        // Ensure all case types are initialized
+        const finalRemaining = ensureAllCaseTypes(totalOwned);
+        allPlaced.forEach((placed: PlacedCase) => {
+          const type = placed.type as keyof CaseCounts;
+          finalRemaining[type] = Math.max(0, (finalRemaining[type] || 0) - 1);
+        });
+        
+        prevCaseCountsRef.current = finalRemaining;
+        setCaseCounts(finalRemaining);
+        setIsLoading(false);
+        isOptimizingRef.current = false;
+        return allPlaced;
+      });
+    }, OPTIMIZATION_DELAY);
+  }, []);
+
+  // Update prevOptimizationMethodRef when method changes (but don't auto-optimize)
+  useEffect(() => {
+    prevOptimizationMethodRef.current = optimizationMethod;
+  }, [optimizationMethod]);
+
+  // Update prevCaseCountsRef when case counts change (but don't auto-optimize)
+  useEffect(() => {
+    prevCaseCountsRef.current = caseCounts;
+  }, [caseCounts]);
 
   const handleOptimize = useCallback(async (newCaseCounts: CaseCounts, edition: StashEdition) => {
     setIsLoading(true);
@@ -76,7 +225,8 @@ const App: React.FC = () => {
         const lockedCases = currentManuallyPlaced.filter(c => c.isLocked);
         
         // Pass only locked cases as constraints (auto-placed cases will be re-optimized)
-        const layout = optimizeStashLayout(remainingCounts, height, lockedCases);
+        // Use the selected optimization method
+        const layout = optimizeStashLayout(remainingCounts, height, lockedCases, optimizationMethod);
         
         // Filter out locked cases from optimizer output (they're already locked)
         const lockedIds = new Set(lockedCases.map((c: PlacedCase) => c.id));
@@ -87,22 +237,28 @@ const App: React.FC = () => {
         
         // Update caseCounts to reflect remaining (unplaced) cases
         // finalRemaining = newCaseCounts (total owned) - all placed
-        const finalRemaining: CaseCounts = { ...newCaseCounts };
+        // Ensure all case types are initialized
+        const finalRemaining = ensureAllCaseTypes(newCaseCounts);
         allPlaced.forEach((placed: PlacedCase) => {
           const type = placed.type as keyof CaseCounts;
           finalRemaining[type] = Math.max(0, (finalRemaining[type] || 0) - 1);
         });
-        setCaseCounts(finalRemaining);
-        setIsLoading(false);
-        // Scroll to stash layout section
-        setTimeout(() => {
-          stashLayoutRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, SCROLL_DELAY);
         
+        // Update both the placed cases and the remaining counts
+        setCaseCounts(finalRemaining);
         return allPlaced;
       });
-    }, 500);
-  }, []);
+      
+      setIsLoading(false);
+      
+      // Scroll to layout after a short delay to allow rendering
+      setTimeout(() => {
+        if (stashLayoutRef.current) {
+          stashLayoutRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, SCROLL_DELAY);
+    }, OPTIMIZATION_DELAY);
+  }, [optimizationMethod]);
 
   const handleOptimizeAll = useCallback(async (newCaseCounts: CaseCounts, edition: StashEdition) => {
     setIsLoading(true);
@@ -115,8 +271,9 @@ const App: React.FC = () => {
     setTimeout(() => {
       const height = STASH_DIMENSIONS[edition].height;
       // Optimize everything from scratch with no locked positions
-      // newCaseCounts is already the total owned (remaining + placed), but we cleared placed, so it's just the owned counts
-      const layout = optimizeStashLayout(newCaseCounts, height, []);
+      // newCaseCounts is already total owned (remaining + placed), but we cleared placed, so it's just owned counts
+      // Use the selected optimization method
+      const layout = optimizeStashLayout(newCaseCounts, height, [], optimizationMethod);
       setManuallyPlacedCases(layout.placedCases);
       // All cases are placed, so remaining is empty (already set above)
       setIsLoading(false);
@@ -125,7 +282,7 @@ const App: React.FC = () => {
         stashLayoutRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, SCROLL_DELAY);
     }, OPTIMIZATION_DELAY);
-  }, []);
+  }, [optimizationMethod]);
 
   const handleCasePlaced = useCallback((placedCase: PlacedCase) => {
     // Mark manually placed cases as locked
@@ -139,14 +296,9 @@ const App: React.FC = () => {
       const lockedCases = updatedPlaced.filter(c => c.isLocked);
       
       // Calculate total owned counts: current remaining + all placed cases
-      const totalOwned: CaseCounts = {} as CaseCounts;
-      
-      // Start with current caseCounts (remaining) - use ref to get latest value
-      const currentCounts = caseCountsRef.current;
-      Object.keys(currentCounts).forEach((type) => {
-        const key = type as keyof CaseCounts;
-        totalOwned[key] = currentCounts[key] || 0;
-      });
+      // Start with current caseCounts (remaining) - use ref to get latest value, ensure all types
+      const currentCounts = ensureAllCaseTypes(caseCountsRef.current);
+      const totalOwned: CaseCounts = { ...currentCounts };
       
       // Add all placed cases to total owned
       updatedPlaced.forEach((placed: PlacedCase) => {
@@ -155,7 +307,7 @@ const App: React.FC = () => {
       });
       
       // Calculate remaining counts: total owned - all placed
-      const remainingCounts: CaseCounts = { ...totalOwned };
+      const remainingCounts = ensureAllCaseTypes(totalOwned);
       updatedPlaced.forEach((placed: PlacedCase) => {
         const type = placed.type as keyof CaseCounts;
         remainingCounts[type] = Math.max(0, (remainingCounts[type] || 0) - 1);
@@ -173,7 +325,8 @@ const App: React.FC = () => {
       const allPlaced = [...lockedCases, ...autoFilledCases];
       
       // Update caseCounts to reflect remaining (unplaced) cases
-      const finalRemaining: CaseCounts = { ...totalOwned };
+      // Ensure all case types are initialized
+      const finalRemaining = ensureAllCaseTypes(totalOwned);
       allPlaced.forEach((placed: PlacedCase) => {
         const type = placed.type as keyof CaseCounts;
         finalRemaining[type] = Math.max(0, (finalRemaining[type] || 0) - 1);
@@ -190,8 +343,8 @@ const App: React.FC = () => {
     const caseToRemove = manuallyPlacedCases.find(c => c.id === caseId);
     if (caseToRemove) {
       setManuallyPlacedCases(prev => prev.filter(c => c.id !== caseId));
-      // Increment count back
-      setCaseCounts(prev => ({
+      // Increment count back, ensure all case types are preserved
+      setCaseCounts(prev => ensureAllCaseTypes({
         ...prev,
         [caseToRemove.type]: (prev[caseToRemove.type] || 0) + 1,
       }));
@@ -240,7 +393,7 @@ const App: React.FC = () => {
   }, []);
 
   const handleCaseDecrement = useCallback((caseType: CaseType) => {
-    setCaseCounts(prev => ({
+    setCaseCounts(prev => ensureAllCaseTypes({
       ...prev,
       [caseType]: Math.max(0, (prev[caseType] || 0) - 1),
     }));
@@ -301,11 +454,13 @@ const App: React.FC = () => {
           caseInputFormRef={caseInputFormRef}
           optimizeButtonRef={optimizeButtonRef}
           stashLayoutRef={stashLayoutRef}
+          betaBannerRef={betaBannerRef}
         />
         
         {/* Tarkov-Style Beta Warning Banner */}
         <div className="flex justify-center mt-6 mb-6">
           <aside 
+            ref={betaBannerRef}
             role="alert" 
             aria-live="polite" 
             className="inline-flex items-center" 
@@ -389,7 +544,8 @@ const App: React.FC = () => {
                 caseCounts={caseCounts}
                 onCaseCountsChange={(newRemaining) => {
                   // InputForm now works with remaining counts directly
-                  setCaseCounts(newRemaining);
+                  // Ensure all case types are preserved
+                  setCaseCounts(ensureAllCaseTypes(newRemaining));
                 }}
                 onDecrement={handleCaseDecrement}
                 onRemovePlacedCase={handleRemovePlacedCase}
@@ -402,6 +558,8 @@ const App: React.FC = () => {
                   setCaseCounts(initialCounts);
                 }}
                 placedCounts={placedCounts}
+                selectedOptimizationMethod={optimizationMethod}
+                onOptimizationMethodChange={handleOptimizationMethodChange}
               />
             </div>
           </section>

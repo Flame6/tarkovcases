@@ -1,9 +1,33 @@
-import type { CaseDefinitions, CaseType, StashEdition } from './types';
+import type { CaseDefinitions, CaseType, StashEdition, OptimizationMethod } from './types';
 
 export const GRID_WIDTH = 10;
 
 // Default stash edition
 export const DEFAULT_STASH_EDITION: StashEdition = 'Edge of Darkness';
+
+// Default optimization method
+export const DEFAULT_OPTIMIZATION_METHOD: OptimizationMethod = 'greedy';
+
+// Optimization methods with descriptions
+export const OPTIMIZATION_METHODS: Record<OptimizationMethod, { 
+  name: string; 
+  description: string; 
+  complexity: 'low' | 'medium' | 'high';
+  speed: 'fast' | 'medium' | 'slow';
+}> = {
+  'greedy': {
+    name: 'Greedy',
+    description: 'Fast algorithm that places items in the first available position with the best local fit. Good for most cases but not always optimal.',
+    complexity: 'low',
+    speed: 'fast'
+  },
+  'genetic': {
+    name: 'Genetic Algorithm',
+    description: 'Evolutionary approach that creates a population of solutions and evolves them over generations. Can find near-optimal solutions but takes longer.',
+    complexity: 'high',
+    speed: 'slow'
+  }
+};
 
 // Timing constants (in milliseconds)
 export const OPTIMIZATION_DELAY = 500; // Delay before running optimization to allow UI updates
@@ -19,7 +43,7 @@ export const STASH_DIMENSIONS = {
 
 export const CASE_TYPES = [
   "ammo", "cards", "docs", "food", "grenades", "items", "junk", "Key_case", "keytool", "mags", "medicine", "money", "pistol", "plates", "sicc", "stims", "tags", "THICCItems", "thiicweapons", "toolbox", "twitch", "wallet", "weapons",
-  "custom_1x1", "custom_1x2", "custom_2x1", "custom_2x2", "custom_2x3", "custom_3x2", "custom_3x3", "custom_3x4", "custom_4x3", "custom_4x4"
+  "custom_1x1", "custom_1x2", "custom_2x1", "custom_2x2", "custom_2x3", "custom_3x1", "custom_3x2", "custom_3x3", "custom_3x4", "custom_4x1", "custom_4x3", "custom_4x4"
 ] as const;
 
 // Helper to generate conventional image paths
@@ -55,9 +79,11 @@ export const CASES: CaseDefinitions = {
   custom_1x2:  { name: "Custom 1x2", width: 1, height: 2, color: "bg-slate-800", image: "", rotatedImage: "" },
   custom_2x2:  { name: "Custom 2x2", width: 2, height: 2, color: "bg-slate-800", image: "", rotatedImage: "" },
   custom_2x3:  { name: "Custom 2x3", width: 2, height: 3, color: "bg-slate-800", image: "", rotatedImage: "" },
+  custom_3x1:  { name: "Custom 3x1", width: 3, height: 1, color: "bg-slate-800", image: "", rotatedImage: "" },
   custom_3x2:  { name: "Custom 3x2", width: 3, height: 2, color: "bg-slate-800", image: "", rotatedImage: "" },
   custom_3x3:  { name: "Custom 3x3", width: 3, height: 3, color: "bg-slate-800", image: "", rotatedImage: "" },
   custom_3x4:  { name: "Custom 3x4", width: 3, height: 4, color: "bg-slate-800", image: "", rotatedImage: "" },
+  custom_4x1:  { name: "Custom 4x1", width: 4, height: 1, color: "bg-slate-800", image: "", rotatedImage: "" },
   custom_4x3:  { name: "Custom 4x3", width: 4, height: 3, color: "bg-slate-800", image: "", rotatedImage: "" },
   custom_4x4:  { name: "Custom 4x4", width: 4, height: 4, color: "bg-slate-800", image: "", rotatedImage: "" },
 };

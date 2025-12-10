@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CASE_TYPES, DEFAULT_STASH_EDITION } from '../constants';
-import type { CaseCounts, StashEdition, CaseType } from '../types';
+import type { CaseCounts, StashEdition, CaseType, OptimizationMethod } from '../types';
 import { getUsageCount, incrementUsageCount } from '../services/usageCounter';
 import { UsageCounter } from './UsageCounter';
 import { LoaderIcon, ChevronDownIcon, ChevronUpIcon } from './Icons';
 import { CaseCard } from './CaseCard';
+import { OptimizationMethodSelector } from './OptimizationMethodSelector';
 
 interface InputFormProps {
   onOptimize: (caseCounts: CaseCounts, edition: StashEdition) => void;
@@ -16,6 +17,8 @@ interface InputFormProps {
   onRemovePlacedCase?: (caseType: CaseType) => void;
   onClearAll?: () => void;
   placedCounts?: CaseCounts;
+  selectedOptimizationMethod?: OptimizationMethod;
+  onOptimizationMethodChange?: (method: OptimizationMethod) => void;
 }
 
 const STORAGE_KEY = 'tarkovStashOptimizerFormData';
@@ -56,7 +59,9 @@ export const InputForm: React.FC<InputFormProps> = ({
   onDecrement,
   onRemovePlacedCase,
   onClearAll,
-  placedCounts
+  placedCounts,
+  selectedOptimizationMethod,
+  onOptimizationMethodChange
 }) => {
   const initialCounts = Object.fromEntries(
     CASE_TYPES.map(type => [type, 0])
@@ -173,14 +178,17 @@ export const InputForm: React.FC<InputFormProps> = ({
     }
   };
   
-  const totalCases = Object.values(caseCounts).reduce((sum: number, count: number) => sum + count, 0);
+  // Calculate total cases including both remaining and placed cases
+  const remainingCases = Object.values(caseCounts).reduce((sum: number, count: number) => sum + count, 0);
+  const placedCasesCount = placedCounts ? Object.values(placedCounts).reduce((sum: number, count: number) => sum + count, 0) : 0;
+  const totalCases = remainingCases + placedCasesCount;
 
   return (
     <form onSubmit={handleSubmit}>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
         <div>
-            <h2 className="text-2xl font-bold text-white mb-2 uppercase tracking-wide">Configure Your Stash</h2>
-            <p className="text-gray-400 mb-1">Click case cards to add them to your collection. Each click adds one case.</p>
+            <h2 className="text-2xl font-bold text-[#9A8866] mb-2 uppercase tracking-wide">Configure Your Stash</h2>
+            <p className="text-[#9A8866] mb-1">Click case cards to add them to your collection. Each click adds one case.</p>
             <p className="text-sm text-gray-500">
               <strong className="text-gray-400">Tip:</strong> Right-click to remove cases • Drag cards to manually place them • Click X on active cards to reset
             </p>
@@ -238,6 +246,15 @@ export const InputForm: React.FC<InputFormProps> = ({
         )}
       </div>
       
+      {/* Optimization Method Selector */}
+      <div className="mt-6 pt-6 border-t border-white/20">
+        <OptimizationMethodSelector
+          selectedMethod={selectedOptimizationMethod || 'greedy'}
+          onMethodChange={onOptimizationMethodChange || (() => {})}
+          disabled={isLoading}
+        />
+      </div>
+      
       <div className="mt-8 pt-6 border-t border-white/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-4">
           <p className="text-gray-300">Total Containers: <span className="text-white font-semibold">{totalCases}</span></p>
@@ -255,15 +272,15 @@ export const InputForm: React.FC<InputFormProps> = ({
               type="button"
               onClick={handleOptimizeAll}
               disabled={isLoading || totalCases === 0}
-              className="flex items-center justify-center min-w-[170px] px-6 py-3 bg-[#1a4a1a] text-white font-bold uppercase tracking-wider transition-colors hover:bg-[#2a6a2a] border border-green-500/30 hover:border-green-500/50 disabled:bg-gray-800 disabled:border-gray-700 disabled:cursor-not-allowed disabled:text-gray-500"
+              className="flex items-center justify-center min-w-[170px] px-6 py-3 bg-[#D48806] !text-black font-bold uppercase tracking-wider transition-colors hover:bg-[#E5A020] border border-[#D48806]/50 hover:border-[#E5A020]/70 disabled:bg-gray-800 disabled:border-gray-700 disabled:cursor-not-allowed disabled:text-gray-500"
             >
               {isLoading ? (
                 <>
-                  <LoaderIcon className="animate-spin -ml-1 mr-3 h-5 w-5 text-black" />
-                  Optimizing...
+                  <LoaderIcon className="animate-spin -ml-1 mr-3 h-5 w-5 !text-black" />
+                  <span className="!text-black">Optimizing...</span>
                 </>
               ) : (
-                'Optimize All'
+                <span className="!text-black">Optimize All</span>
               )}
             </button>
           )}
